@@ -4,3 +4,8 @@ brag [![Build Status](https://travis-ci.org/mbutterick/brag.svg?branch=master)](
 
 Racket DSL for generating parsers from BNF grammars
 
+
+Install
+-
+
+`raco pkg install brag`
