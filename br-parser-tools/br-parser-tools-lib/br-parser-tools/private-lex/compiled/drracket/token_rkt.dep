@@ -1,1 +1,0 @@
-("6.8.0.2" ("c47b01af4f27383fafb3cea5d0e14b2b92da094b" . "5a9e9888caac8c6df5e32eab1eb77a9522bb1097") (collects #"br-parser-tools" #"private-lex" #"token-syntax.rkt") (collects #"mzscheme" #"main.rkt"))

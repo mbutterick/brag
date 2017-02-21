@@ -1,1 +1,0 @@
-("6.8.0.2" ("f095138d7dfc29ae18c12d7daf44f1c9b74ab56d" . "f0c7dd306804eb5e8da06235651b07296b23b36d") (collects #"scheme" #"base.rkt") (collects #"scheme" #"runtime-config.rkt") (collects #"syntax" #"stx.rkt"))

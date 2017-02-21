@@ -1,1 +1,0 @@
-("6.8.0.2" ("1edbe8de6053f0e8735c4d7777b345672d547c86" . "980e8a36193a9253ed01c61fc421729123f6b314") (collects #"br-parser-tools" #"private-lex" #"re.rkt") (collects #"br-parser-tools" #"private-lex" #"util.rkt") (collects #"mzlib" #"integer-set.rkt") (collects #"mzlib" #"list.rkt") (collects #"mzscheme" #"main.rkt"))

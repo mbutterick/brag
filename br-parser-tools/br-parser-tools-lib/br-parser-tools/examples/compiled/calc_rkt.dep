@@ -1,1 +1,0 @@
-("6.8.0.2" ("e3352df1b72626dc220a94ee0bd16f165519bade" . "3c46fc3eda107e037940fbfb68032106839316da") (collects #"br-parser-tools" #"lex-sre.rkt") (collects #"br-parser-tools" #"lex.rkt") (collects #"br-parser-tools" #"yacc.rkt") (collects #"scheme" #"main.rkt") (collects #"scheme" #"runtime-config.rkt"))

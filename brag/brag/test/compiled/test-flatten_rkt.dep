@@ -1,1 +1,0 @@
-("6.8.0.2" ("44f386de5de9b199efd938a53686d684711b8b59" . "d6abc65a0064c2432f0d6822f10bb12f671f79ea") (collects #"brag" #"codegen" #"flatten.rkt") (collects #"brag" #"rules" #"stx-types.rkt") (collects #"racket" #"base.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rackunit" #"main.rkt"))

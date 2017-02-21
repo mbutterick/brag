@@ -1,1 +1,0 @@
-("6.8.0.2" ("4594481ac3bf7a1dfb75324c86a180c4a121ab41" . "64293529315a4e5ca67bc9da08b943f520e0d704") (collects #"info" #"main.rkt") (collects #"setup" #"infotab.rkt"))

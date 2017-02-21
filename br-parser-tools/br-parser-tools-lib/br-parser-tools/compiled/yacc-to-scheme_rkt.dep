@@ -1,1 +1,0 @@
-("6.8.0.2" ("d5abd58a5a7bfc4bc558dd51bd60ad27bf7d5be9" . "1ff2a8b025cffabf443820bc20e3a0c286570369") (collects #"br-parser-tools" #"lex-sre.rkt") (collects #"br-parser-tools" #"lex.rkt") (collects #"br-parser-tools" #"yacc.rkt") (collects #"mzlib" #"list.rkt") (collects #"mzscheme" #"main.rkt") (collects #"syntax" #"readerr.rkt"))

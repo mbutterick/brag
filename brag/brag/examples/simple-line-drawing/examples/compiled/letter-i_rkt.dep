@@ -1,1 +1,0 @@
-("6.8.0.2" ("5a1d531db723394e70b1b19884d42a562c283876" . "ad10ce84713689ab99a459c16f36106d4048da68") (collects #"brag" #"examples" #"simple-line-drawing" #"lang" #"reader.rkt") (collects #"brag" #"examples" #"simple-line-drawing" #"semantics.rkt") (collects #"racket" #"runtime-config.rkt"))
