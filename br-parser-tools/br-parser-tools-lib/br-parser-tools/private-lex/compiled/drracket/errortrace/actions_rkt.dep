@@ -1,0 +1,1 @@
+("6.8.0.2" ("f095138d7dfc29ae18c12d7daf44f1c9b74ab56d" . "4c8c1a7dddb28b104057c25eaf86b1a95e60048c") (collects #"errortrace" #"errortrace-key.rkt") (collects #"scheme" #"base.rkt") (collects #"scheme" #"runtime-config.rkt") (collects #"syntax" #"stx.rkt"))

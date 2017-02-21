@@ -1,0 +1,1 @@
+("6.8.0.2" ("468f21e5aa316cce76913f10fb16179eb072183c" . "c0c07e543a2da6a5a900016b86916e67cfc9a89f") (collects #"br-parser-tools" #"private-yacc" #"yacc-helper.rkt") (collects #"errortrace" #"errortrace-key.rkt") (collects #"mzlib" #"class.rkt") (collects #"mzlib" #"list.rkt") (collects #"mzscheme" #"main.rkt") (collects #"racket" #"contract.rkt"))

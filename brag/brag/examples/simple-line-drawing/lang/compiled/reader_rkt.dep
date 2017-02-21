@@ -1,0 +1,1 @@
+("6.8.0.2" ("c8b67b7201b23c3e04cb7c403946a85353dfc61f" . "4566c23431d2a1b416e2baaacb9f264fe8af413f") (collects #"brag" #"examples" #"simple-line-drawing" #"grammar.rkt") (collects #"brag" #"examples" #"simple-line-drawing" #"lexer.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"s-exp" #"lang" #"reader.rkt") (collects #"syntax" #"module-reader.rkt"))

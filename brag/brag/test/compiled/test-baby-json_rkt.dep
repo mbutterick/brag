@@ -1,0 +1,1 @@
+("6.8.0.2" ("87d418a0a4e39f423ff7913177dbe5bfd0fa8bf6" . "39c77f483e938c1bac09c43d96d0e740e2a2ac55") (collects #"brag" #"examples" #"baby-json.rkt") (collects #"brag" #"support.rkt") (collects #"racket" #"base.rkt") (collects #"racket" #"runtime-config.rkt") (collects #"rackunit" #"main.rkt"))

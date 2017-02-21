@@ -1,0 +1,1 @@
+("6.8.0.2" ("31789e05e19e6122c7619af755b6438bc1872e9b" . "b19638aea3046717541136642402ab336892a3aa") (collects #"br-parser-tools" #"lex.rkt") (collects #"errortrace" #"errortrace-key.rkt") (collects #"mzscheme" #"main.rkt"))

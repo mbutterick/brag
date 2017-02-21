@@ -1,0 +1,1 @@
+("6.8.0.2" ("31789e05e19e6122c7619af755b6438bc1872e9b" . "0a9e246cdda8f6239b7422f687b6513aa57dfb7f") (collects #"br-parser-tools" #"lex.rkt") (collects #"mzscheme" #"main.rkt"))
