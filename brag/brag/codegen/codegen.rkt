@@ -44,7 +44,7 @@
        
        ;; The first rule, by default, is the start rule.
        (define rule-ids (for/list ([a-rule (in-list rules)])
-                                  (rule-id a-rule)))
+                          (rule-id a-rule)))
        (define start-id (first rule-ids))
        
        
@@ -144,13 +144,15 @@
                                                       (end EOF)
                                                       (error THE-ERROR-HANDLER)
                                                       generated-grammar)])
-                        (case-lambda [(tokenizer)
-                                      (define next-token
-                                        (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                      (THE-GRAMMAR next-token)]
-                                     [(source tokenizer)
-                                      (parameterize ([current-source source])
-                                        (parse tokenizer))])))]))
+                        (procedure-rename
+                         (case-lambda [(tokenizer)
+                                       (define next-token
+                                         (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
+                                       (THE-GRAMMAR next-token)]
+                                      [(source tokenizer)
+                                       (parameterize ([current-source source])
+                                         (parse tokenizer))])
+                         (string->symbol (format "~a-rule-parser" 'start-rule)))))]))
              
              (define parse (make-rule-parser start-id))
              (provide parse-to-datum parse-tree)
@@ -209,33 +211,33 @@
     (for/list ([translated-pattern (in-list translated-patterns)]
                [primitive-pattern (syntax->list a-clause)]
                [pos (in-naturals 1)])
-              (if (eq? (syntax-property primitive-pattern 'hide) 'hide)
-                  #'null
-                  (with-syntax ([$X 
-                                 (format-id translated-pattern "$~a" pos)]
-                                [$X-start-pos 
-                                 (format-id translated-pattern "$~a-start-pos" pos)]
-                                [$X-end-pos
-                                 (format-id translated-pattern "$~a-end-pos" pos)])
-                    (syntax-case primitive-pattern (id lit token inferred-id)
+      (if (eq? (syntax-property primitive-pattern 'hide) 'hide)
+          #'null
+          (with-syntax ([$X 
+                         (format-id translated-pattern "$~a" pos)]
+                        [$X-start-pos 
+                         (format-id translated-pattern "$~a-start-pos" pos)]
+                        [$X-end-pos
+                         (format-id translated-pattern "$~a-end-pos" pos)])
+            (syntax-case primitive-pattern (id lit token inferred-id)
                       
-                      ;; When a rule usage is inferred, the value of $X is a syntax object
-                      ;; whose head is the name of the inferred rule . We strip that out,
-                      ;; leaving the residue to be absorbed.
-                      [(inferred-id val reason)
-                       #'(syntax-case $X ()
-                           [(inferred-rule-name . rest)
-                            (syntax->list #'rest)])]
-                      [(id val)
-                       ;; at this point, the 'hide property is either #f or "splice"
-                       ;; ('hide value is handled at the top of this conditional
-                       ;; we need to use boolean because a symbol is treated as an identifier.
-                       ;; also we'll separate it into its own property for clarity and test for it in "runtime.rkt"
-                       #`(list (syntax-property $X 'splice-rh-id #,(and (syntax-property primitive-pattern 'hide) #t)))]
-                      [(lit val)
-                       #'(list (atomic-datum->syntax $X $X-start-pos $X-end-pos))]
-                      [(token val)
-                       #'(list (atomic-datum->syntax $X $X-start-pos $X-end-pos))])))))
+              ;; When a rule usage is inferred, the value of $X is a syntax object
+              ;; whose head is the name of the inferred rule . We strip that out,
+              ;; leaving the residue to be absorbed.
+              [(inferred-id val reason)
+               #'(syntax-case $X ()
+                   [(inferred-rule-name . rest)
+                    (syntax->list #'rest)])]
+              [(id val)
+               ;; at this point, the 'hide property is either #f or "splice"
+               ;; ('hide value is handled at the top of this conditional
+               ;; we need to use boolean because a symbol is treated as an identifier.
+               ;; also we'll separate it into its own property for clarity and test for it in "runtime.rkt"
+               #`(list (syntax-property $X 'splice-rh-id #,(and (syntax-property primitive-pattern 'hide) #t)))]
+              [(lit val)
+               #'(list (atomic-datum->syntax $X $X-start-pos $X-end-pos))]
+              [(token val)
+               #'(list (atomic-datum->syntax $X $X-start-pos $X-end-pos))])))))
   
   (define whole-rule-loc
     (if (empty? translated-patterns)
@@ -326,26 +328,26 @@
   (define table (make-free-id-table))
   ;; Pass one: collect all the defined rule names.
   (for ([a-rule (in-list rules)])
-       (free-id-table-set! table (rule-id a-rule) #t))
+    (free-id-table-set! table (rule-id a-rule) #t))
   ;; Pass two: check each referenced id, and make sure it's been defined.
   (for ([a-rule (in-list rules)])
-       (for ([referenced-id (in-list (rule-collect-used-ids a-rule))])
-            (unless (free-id-table-ref table referenced-id (lambda () #f))
-              (raise-syntax-error #f (format "Rule ~a has no definition" (syntax-e referenced-id))
-                                  referenced-id)))))
+    (for ([referenced-id (in-list (rule-collect-used-ids a-rule))])
+      (unless (free-id-table-ref table referenced-id (lambda () #f))
+        (raise-syntax-error #f (format "Rule ~a has no definition" (syntax-e referenced-id))
+                            referenced-id)))))
 
 ;; check-all-rules-no-duplicates!: (listof rule-stx) -> void
 (define (check-all-rules-no-duplicates! rules)
   (define table (make-free-id-table))
   ;; Pass one: collect all the defined rule names.
   (for ([a-rule (in-list rules)])
-       (define maybe-other-rule-id (free-id-table-ref table (rule-id a-rule) (lambda () #f)))
-       (when maybe-other-rule-id
-         (raise-syntax-error #f (format "Rule ~a has a duplicate definition" (syntax-e (rule-id a-rule)))
-                             (rule-id a-rule)
-                             #f
-                             (list (rule-id a-rule) maybe-other-rule-id)))
-       (free-id-table-set! table (rule-id a-rule) (rule-id a-rule))))
+    (define maybe-other-rule-id (free-id-table-ref table (rule-id a-rule) (lambda () #f)))
+    (when maybe-other-rule-id
+      (raise-syntax-error #f (format "Rule ~a has a duplicate definition" (syntax-e (rule-id a-rule)))
+                          (rule-id a-rule)
+                          #f
+                          (list (rule-id a-rule) maybe-other-rule-id)))
+    (free-id-table-set! table (rule-id a-rule) (rule-id a-rule))))
 
 
 
@@ -393,9 +395,9 @@
 (define (check-all-rules-satisfiable! rules)
   (define toplevel-rule-table (make-free-id-table))
   (for ([a-rule (in-list rules)])
-       (free-id-table-set! toplevel-rule-table 
-                           (rule-id a-rule) 
-                           (sat:make-and)))
+    (free-id-table-set! toplevel-rule-table 
+                        (rule-id a-rule) 
+                        (sat:make-and)))
   (define leaves '())
   
   (define (make-leaf)
@@ -415,8 +417,8 @@
        (begin
          (define an-or-node (sat:make-or))
          (for ([v (in-list (syntax->list #'(vals ...)))])
-              (define a-child (process-pattern v))
-              (sat:add-child! an-or-node a-child))
+           (define a-child (process-pattern v))
+           (sat:add-child! an-or-node a-child))
          an-or-node)]
       [(repeat min val)
        (syntax-case #'min ()
@@ -430,19 +432,19 @@
        (begin
          (define an-and-node (sat:make-and))
          (for ([v (in-list (syntax->list #'(vals ...)))])
-              (define a-child (process-pattern v))
-              (sat:add-child! an-and-node a-child))
+           (define a-child (process-pattern v))
+           (sat:add-child! an-and-node a-child))
          an-and-node)]))
   
   (for ([a-rule (in-list rules)])
-       (define rule-node (free-id-table-ref toplevel-rule-table (rule-id a-rule)))
-       (sat:add-child! rule-node (process-pattern (rule-pattern a-rule))))
+    (define rule-node (free-id-table-ref toplevel-rule-table (rule-id a-rule)))
+    (sat:add-child! rule-node (process-pattern (rule-pattern a-rule))))
   
   (for ([a-leaf leaves])
-       (sat:visit! a-leaf))
+    (sat:visit! a-leaf))
   
   (for ([a-rule (in-list rules)])
-       (define rule-node (free-id-table-ref toplevel-rule-table (rule-id a-rule)))
-       (unless (sat:node-yes? rule-node)
-         (raise-syntax-error #f (format "Rule ~a has no finite derivation" (syntax-e (rule-id a-rule)))
-                             (rule-id a-rule)))))
+    (define rule-node (free-id-table-ref toplevel-rule-table (rule-id a-rule)))
+    (unless (sat:node-yes? rule-node)
+      (raise-syntax-error #f (format "Rule ~a has no finite derivation" (syntax-e (rule-id a-rule)))
+                          (rule-id a-rule)))))
