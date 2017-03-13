@@ -12,3 +12,8 @@ Install
 -
 
 `raco pkg install brag`
+
+
+Documentation
+-
+http://docs.racket-lang.org/brag/
