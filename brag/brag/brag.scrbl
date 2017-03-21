@@ -144,7 +144,7 @@ to use:
 
  @item{It provides a @litchar{#lang} for writing BNF grammars.
   A module written in @litchar{#lang brag} automatically generates a
-  parser. The grammar controls the structure of the @tech{syntax objects} it generates.}
+  parser. The grammar controls the structure of the syntax objects it generates.}
 
  @item{The language uses a few conventions to simplify the expression of
   grammars. The first rule in the grammar is assumed to be the
