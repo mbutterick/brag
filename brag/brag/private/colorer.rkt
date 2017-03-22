@@ -38,7 +38,8 @@
         (values val cat #f start end))))
 
 (module+ test
-  (require rackunit sugar/list)
+  (require rackunit)
+  (define-syntax-rule (values->list EXPR) (call-with-values (λ () EXPR) list))
   (define (apply-colorer str)
     (for/list ([annotation (in-port (λ (p)
                                       (let ([xs (values->list (color-brag p))])
