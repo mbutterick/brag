@@ -7,6 +7,8 @@
          racket/string)
 
 (provide lex/1 tokenize)
+(module+ lex-abbrevs
+  (provide hide-char splice-char id-char letter digit NL id))
 
 ;; A newline can be any one of the following.
 (define-lex-abbrev NL (:or "\r\n" "\r" "\n"))
@@ -67,18 +69,11 @@
     ;; Skip whitespace
     (return-without-pos (lex/1 input-port))]
    ;; Skip comments up to end of line
-   ;; but detect possble kwargs.
-   [(:: (:or "#" ";") ; remove # as comment char
+   [(:: (:or "#" ";")
         (complement (:: (:* any-char) NL (:* any-char)))
         (:or NL ""))
-    (let ([maybe-kwarg-match (regexp-match #px"^#:(.*?)\\s*(.*?)$" lexeme)])
-      (when maybe-kwarg-match
-        (let* ([parts (map string->symbol (string-split (string-trim lexeme "#:" #:right? #f)))]
-               [kw (car parts)][val (cadr parts)])
-          (case kw
-            [(prefix-out) (current-prefix-out val)]
-            [else (error 'lexer (format "got unknown keyword ~a" kw))])))
-      (return-without-pos (lex/1 input-port)))]
+    ;; Skip comments up to end of line.
+    (return-without-pos (lex/1 input-port))]
    [(eof)
     (token-EOF lexeme)]
    [(:: id (:* whitespace) ":")
