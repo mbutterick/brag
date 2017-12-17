@@ -254,7 +254,7 @@ Let's try this function:
 
 A @emph{token} is the smallest meaningful element of a source program. Tokens can be  strings, symbols, or instances of the @racket[token] data structure. (Plus a few other special cases, which we'll discuss later.) Usually, a token holds a single character from the source program. But sometimes it makes sense to package a sequence of characters into a single token, if the sequence has an indivisible meaning.
 
-If possible, we also want to attach source location information to each token. Why? Because this informatino will be incorporated into the syntax objects produced by @racket[parse].
+If possible, we also want to attach source location information to each token. Why? Because this information will be incorporated into the syntax objects produced by @racket[parse].
 
 A parser often works in conjunction with a helper function called a @emph{lexer} that converts the raw code of the source program into tokens. The @racketmodname[br-parser-tools/lex] library can help us write a position-sensitive
 tokenizer:
