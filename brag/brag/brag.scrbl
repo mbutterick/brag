@@ -683,7 +683,7 @@ A @deftech{pattern} is one of the following:
 
   Because their underlying meanings are the same, the symbolic token identifier ends up being a notational convenience for readability inside a grammar pattern. Typically, the literal string @racket["FOO"] is used to connote ``match the string @racket["FOO"] exactly'' and the symbolic token identifier @racket[FOO] specially connotes ``match any token of type @racket['FOO]''.
 
-  You @bold{cannot} use the literal string @racket["error"] as a terminal in a grammar, because it's reserved for @tt{brag}. You can, however, adjust your lexer to package it inside a token structure — say, @racket[(token ERROR "error")] — and then use the symbolic token identifier @racket[ERROR] in the grammar to match this token structure.
+  You @bold{cannot} use the literal string @racket["error"] as a terminal in a grammar, because it's reserved for @tt{brag}. You can, however, adjust your lexer to package it inside a token structure — say, @racket[(token 'ERROR "error")] — and then use the symbolic token identifier @racket[ERROR] in the grammar to match this token structure.
 }
 
  @item{a @tech{rule identifier}}
