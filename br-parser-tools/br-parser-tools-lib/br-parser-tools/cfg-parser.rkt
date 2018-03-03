@@ -705,10 +705,13 @@
                                                         (if src-pos?
                                                             #'($1-start-pos $1-end-pos)
                                                             #'(#f #f))])
-                                           #`(grammar (start [() null]
-                                                             [(atok start) (cons $1 $2)])
-                                                      (atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
-                                         #`(start start)
+                                           ;; rename `start` and `atok` to `%start` and `%atok`
+                                           ;; so that "start" and "atok" can be used as literal string tokens in a grammar.
+                                           ;; not sure why this works, but it passes all tests.
+                                           #`(grammar (%start [() null]
+                                                              [(%atok %start) (cons $1 $2)])
+                                                      (%atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
+                                         #`(start %start)
                                          parser-clauses)))]
                                [(grammar . _)
                                 (raise-syntax-error
@@ -744,37 +747,31 @@
                                    val
                                    (next success-k fail-k max-depth tasks)))]
                             [fail-k (lambda (max-depth tasks)
-                                      (define (call-error-proc tok-ok? tok-name tok-value start-pos end-pos)
-                                        (cond
-                                         [(procedure-arity-includes? error-proc 5)
-                                          (error-proc tok-ok? tok-name tok-value start-pos end-pos)]
-                                         [else
-                                          (error-proc tok-ok? tok-name tok-value)]))
                                       (cond
-                                       [(null? tok-list)
-                                        (if error-proc
-                                            (call-error-proc #t
-                                                             'no-tokens
-                                                             #f
-                                                             (make-position #f #f #f)
-                                                             (make-position #f #f #f))
-                                            (error
-                                             'cfg-parse
-                                             "no tokens"))]
-                                       [else
-                                        (let ([bad-tok (list-ref tok-list 
-                                                                 (min (sub1 (length tok-list))
-                                                                      max-depth))])
-                                          (if error-proc
-                                              (call-error-proc #t
-                                                               (tok-orig-name bad-tok)
-                                                               (tok-val bad-tok)
-                                                               (tok-start bad-tok)
-                                                               (tok-end bad-tok))
-                                              (error
-                                               'cfg-parse
-                                               "failed at ~a" 
-                                               (tok-val bad-tok))))]))])
+                                        [(null? tok-list)
+                                         (if error-proc
+                                             (error-proc #t
+                                                         'no-tokens
+                                                         #f
+                                                         (make-position #f #f #f)
+                                                         (make-position #f #f #f))
+                                             (error
+                                              'cfg-parse
+                                              "no tokens"))]
+                                        [else
+                                         (let ([bad-tok (list-ref tok-list 
+                                                                  (min (sub1 (length tok-list))
+                                                                       max-depth))])
+                                           (if error-proc
+                                               (error-proc #t
+                                                           (tok-orig-name bad-tok)
+                                                           (tok-val bad-tok)
+                                                           (tok-start bad-tok)
+                                                           (tok-end bad-tok))
+                                               (error
+                                                'cfg-parse
+                                                "failed at ~a" 
+                                                (tok-val bad-tok))))]))])
                      (#,start tok-list
                               ;; we simulate a token at the very beginning with zero width
                               ;; for use with the position-generating code (*-start-pos, *-end-pos).
@@ -805,7 +802,6 @@
   (require (submod "..")
            br-parser-tools/lex
            racket/block
-           racket/generator
            rackunit)
 
   ;; Test: parsing regular expressions.
@@ -854,61 +850,7 @@
                                   1 13)
                               1 13)))
   
-
-  ;; Check that cfg-parser can accept error functions of 3 arguments:
-  (block
-   (define-tokens non-terminals (ONE ZERO EOF))
-   (define parse
-     (cfg-parser (tokens non-terminals)
-                 (start ones)
-                 (end EOF)
-                 (error (lambda (tok-ok tok-name tok-val)
-                          (error (format "~a ~a ~a" tok-ok tok-name tok-val))))
-                 (grammar [ones [() null]
-                                [(ONE ones) (cons $1 $2)]])))
-   (define (sequence->tokenizer s)
-     (define-values (more? next) (sequence-generate s))
-     (lambda ()
-       (cond [(more?) (next)]
-             [else (token-EOF 'eof)])))
-   (check-exn #rx"#t ZERO zero" 
-              (lambda () (parse (sequence->tokenizer (list (token-ZERO "zero")))))))
-
-
-
-
-  ;; Check that cfg-parser can accept error functions of 5 arguments:
-  (block
-   (define-tokens non-terminals (ONE ZERO EOF))
-   (define parse
-     (cfg-parser (tokens non-terminals)
-                 (start ones)
-                 (src-pos)
-                 (end EOF)
-                 (error (lambda (tok-ok tok-name tok-val start-pos end-pos)
-                          (error (format "~a ~a ~a ~a ~a" 
-                                         tok-ok tok-name tok-val
-                                         (position-offset start-pos)
-                                         (position-offset end-pos)))))
-                 (grammar [ones [() null]
-                                [(ONE ones) (cons $1 $2)]])))
-   (define (sequence->tokenizer s)
-     (define-values (more? next) (sequence-generate s))
-     (lambda ()
-       (cond [(more?) (next)]
-             [else (position-token (token-EOF 'eof)
-                                   (position #f #f #f)
-                                   (position #f #f #f))])))
-   (check-exn #rx"#t ZERO zero 2 3"
-              (lambda () 
-                (parse 
-                 (sequence->tokenizer 
-                  (list (position-token 
-                         (token-ZERO "zero")
-                         (position 2 2 5) 
-                         (position 3 2 6))))))))
-
-   
+  
   
   
   
