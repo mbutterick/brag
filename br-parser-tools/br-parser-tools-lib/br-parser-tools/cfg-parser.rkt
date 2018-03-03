@@ -652,67 +652,72 @@
                                                 pats (caddr old-list))))
                                    nt-ids patss)
                                   ;; Build a definition for each non-term:
-                                  (loop (cdr clauses)
-                                        cfg-start
-                                        (map (lambda (nt pats handles $ctxs)
-                                               (define info (bound-identifier-mapping-get nts nt))
-                                               (list nt
-                                                     #`(let ([key (gensym '#,nt)])
-                                                         (lambda (stream last-consumed-token depth end success-k fail-k max-depth tasks)
-                                                           (parse-nt/share
-                                                            key #,(car info) '#,(cadr info) stream last-consumed-token depth end
-                                                            max-depth tasks
-                                                            success-k fail-k
-                                                            (lambda (end max-depth tasks success-k fail-k)
-                                                              #,(let loop ([pats pats]
-                                                                           [handles (syntax->list handles)]
-                                                                           [$ctxs (syntax->list $ctxs)]
-                                                                           [simple?s (caddr info)])
-                                                                  (if (null? pats)
-                                                                      #'(fail-k max-depth tasks)
-                                                                      #`(#,(if (or (null? (cdr pats))
-                                                                                   (car simple?s))
-                                                                               #'parse-or
-                                                                               #'parse-parallel-or)
-                                                                         (lambda (stream last-consumed-token depth end success-k fail-k max-depth tasks)
-                                                                           #,(build-match nts
-                                                                                          toks 
-                                                                                          (car pats)
-                                                                                          (car handles)
-                                                                                          (car $ctxs)))
-                                                                         (lambda (stream last-consumed-token depth end success-k fail-k max-depth tasks)
-                                                                           #,(loop (cdr pats)
-                                                                                   (cdr handles)
-                                                                                   (cdr $ctxs)
-                                                                                   (cdr simple?s)))
-                                                                         stream last-consumed-token depth end success-k fail-k max-depth tasks)))))))))
-                                             nt-ids
-                                             patss
-                                             (syntax->list #'(((begin handle0 handle ...) ...) ...))
-                                             (syntax->list #'((handle0 ...) ...)))
-                                        cfg-error
-                                        src-pos?
-                                        (list*
-                                         (with-syntax ([((tok tok-id . $e) ...)
-                                                        (token-identifier-mapping-map toks
-                                                                                      (lambda (k v)
-                                                                                        (list* k
-                                                                                               (car v)
-                                                                                               (if (cdr v)
-                                                                                                   #f
-                                                                                                   '$1))))]
-                                                       [(pos ...) 
-                                                        (if src-pos?
-                                                            #'($1-start-pos $1-end-pos)
-                                                            #'(#f #f))])
-                                           ;; rename `start` and `atok` to `%start` and `%atok`
-                                           ;; so that "start" and "atok" can be used as literal string tokens in a grammar.
-                                           ;; not sure why this works, but it passes all tests.
-                                           #`(grammar (%start [() null]
-                                                              [(%atok %start) (cons $1 $2)])
-                                                      (%atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
-                                         #`(start %start)
-                                         parser-clauses)))]
+                                  (let ([start-id-temp (gensym)]
+                                        [atok-id-temp (gensym)])
+                                    (loop (cdr clauses)
+                                          cfg-start
+                                          (map (lambda (nt pats handles $ctxs)
+                                                 (define info (bound-identifier-mapping-get nts nt))
+                                                 (list nt
+                                                       #`(let ([key (gensym '#,nt)])
+                                                           (lambda (stream last-consumed-token depth end success-k fail-k max-depth tasks)
+                                                             (parse-nt/share
+                                                              key #,(car info) '#,(cadr info) stream last-consumed-token depth end
+                                                              max-depth tasks
+                                                              success-k fail-k
+                                                              (lambda (end max-depth tasks success-k fail-k)
+                                                                #,(let loop ([pats pats]
+                                                                             [handles (syntax->list handles)]
+                                                                             [$ctxs (syntax->list $ctxs)]
+                                                                             [simple?s (caddr info)])
+                                                                    (if (null? pats)
+                                                                        #'(fail-k max-depth tasks)
+                                                                        #`(#,(if (or (null? (cdr pats))
+                                                                                     (car simple?s))
+                                                                                 #'parse-or
+                                                                                 #'parse-parallel-or)
+                                                                           (lambda (stream last-consumed-token depth end success-k fail-k max-depth tasks)
+                                                                             #,(build-match nts
+                                                                                            toks 
+                                                                                            (car pats)
+                                                                                            (car handles)
+                                                                                            (car $ctxs)))
+                                                                           (lambda (stream last-consumed-token depth end success-k fail-k max-depth tasks)
+                                                                             #,(loop (cdr pats)
+                                                                                     (cdr handles)
+                                                                                     (cdr $ctxs)
+                                                                                     (cdr simple?s)))
+                                                                           stream last-consumed-token depth end success-k fail-k max-depth tasks)))))))))
+                                               nt-ids
+                                               patss
+                                               (syntax->list #'(((begin handle0 handle ...) ...) ...))
+                                               (syntax->list #'((handle0 ...) ...)))
+                                          cfg-error
+                                          src-pos?
+                                          (list*
+                                           (with-syntax ([((tok tok-id . $e) ...)
+                                                          (token-identifier-mapping-map toks
+                                                                                        (lambda (k v)
+                                                                                          (list* k
+                                                                                                 (car v)
+                                                                                                 (if (cdr v)
+                                                                                                     #f
+                                                                                                     '$1))))]
+                                                         [(pos ...) 
+                                                          (if src-pos?
+                                                              #'($1-start-pos $1-end-pos)
+                                                              #'(#f #f))]
+                                                         ;; rename `start` and `atok` to temp ids
+                                                         ;; so that "start" and "atok" can be used as literal string tokens in a grammar.
+                                                         ;; not sure why this works, but it passes all tests.
+                                                         [%start start-id-temp]
+                                                         [%atok atok-id-temp])
+                                             #`(grammar (%start [() null]
+                                                                [(%atok %start) (cons $1 $2)])
+                                                        (%atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
+                                           (with-syntax ([%start start-id-temp])
+                                             #`(start %start))
+                                           parser-clauses))))]
                                [(grammar . _)
                                 (raise-syntax-error
                                  #f
