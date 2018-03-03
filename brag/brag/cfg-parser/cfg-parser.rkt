@@ -705,10 +705,13 @@
                                                         (if src-pos?
                                                             #'($1-start-pos $1-end-pos)
                                                             #'(#f #f))])
-                                           #`(grammar (start [() null]
-                                                             [(atok start) (cons $1 $2)])
-                                                      (atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
-                                         #`(start start)
+                                           ;; rename `start` and `atok` to `%start` and `%atok`
+                                           ;; so that "start" and "atok" can be used as literal string tokens in a grammar.
+                                           ;; not sure why this works, but it passes all tests.
+                                           #`(grammar (%start [() null]
+                                                              [(%atok %start) (cons $1 $2)])
+                                                      (%atok [(tok) (make-tok 'tok-id 'tok $e pos ...)] ...)))
+                                         #`(start %start)
                                          parser-clauses)))]
                                [(grammar . _)
                                 (raise-syntax-error
@@ -745,30 +748,30 @@
                                    (next success-k fail-k max-depth tasks)))]
                             [fail-k (lambda (max-depth tasks)
                                       (cond
-                                       [(null? tok-list)
-                                        (if error-proc
-                                            (error-proc #t
-                                                        'no-tokens
-                                                        #f
-                                                        (make-position #f #f #f)
-                                                        (make-position #f #f #f))
-                                            (error
-                                             'cfg-parse
-                                             "no tokens"))]
-                                       [else
-                                        (let ([bad-tok (list-ref tok-list 
-                                                                 (min (sub1 (length tok-list))
-                                                                      max-depth))])
-                                          (if error-proc
-                                              (error-proc #t
-                                                          (tok-orig-name bad-tok)
-                                                          (tok-val bad-tok)
-                                                          (tok-start bad-tok)
-                                                          (tok-end bad-tok))
-                                              (error
-                                               'cfg-parse
-                                               "failed at ~a" 
-                                               (tok-val bad-tok))))]))])
+                                        [(null? tok-list)
+                                         (if error-proc
+                                             (error-proc #t
+                                                         'no-tokens
+                                                         #f
+                                                         (make-position #f #f #f)
+                                                         (make-position #f #f #f))
+                                             (error
+                                              'cfg-parse
+                                              "no tokens"))]
+                                        [else
+                                         (let ([bad-tok (list-ref tok-list 
+                                                                  (min (sub1 (length tok-list))
+                                                                       max-depth))])
+                                           (if error-proc
+                                               (error-proc #t
+                                                           (tok-orig-name bad-tok)
+                                                           (tok-val bad-tok)
+                                                           (tok-start bad-tok)
+                                                           (tok-end bad-tok))
+                                               (error
+                                                'cfg-parse
+                                                "failed at ~a" 
+                                                (tok-val bad-tok))))]))])
                      (#,start tok-list
                               ;; we simulate a token at the very beginning with zero width
                               ;; for use with the position-generating code (*-start-pos, *-end-pos).

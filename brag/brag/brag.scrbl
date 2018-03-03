@@ -679,9 +679,12 @@ A @deftech{pattern} is one of the following:
  @item{an implicit sequence of @tech{pattern}s separated by whitespace}
  @item{a terminal: either a literal string or a @tech{symbolic token identifier}. 
 
-  When used in a pattern, both these terminals will match the same set of inputs. A literal string can match the string itself, or a @racket[token] whose type field contains that string (or its symbol form). So @racket["FOO"] would  match @racket["FOO"], @racket[(token "FOO" "bar")], or @racket[(token 'FOO "bar")]. A symbolic token identifier can also match the string version of the identifier, or a @racket[token] whose type field is the symbol or string form of the identifier. So @racket[FOO] would also match @racket["FOO"], @racket[(token 'FOO "bar")], or @racket[(token "FOO" "bar")]. (In every case, the value of a token, like @racket["bar"], can be anything, and may or may not be the same as its type.)
+  When used in a pattern, both these terminals will match the same set of inputs. A literal string can match the string itself, or a @racket[token] structure whose type field contains that string (or its symbol form). So @racket["FOO"] would  match @racket["FOO"], @racket[(token "FOO" "bar")], or @racket[(token 'FOO "bar")]. A symbolic token identifier can also match the string version of the identifier, or a @racket[token] whose type field is the symbol or string form of the identifier. So @racket[FOO] would also match @racket["FOO"], @racket[(token 'FOO "bar")], or @racket[(token "FOO" "bar")]. (In every case, the value of a token, like @racket["bar"], can be anything, and may or may not be the same as its type.)
 
-  Because their underlying meanings are the same, the symbolic token identifier ends up being a notational convenience for readability inside a grammar pattern. Typically, the literal string @racket["FOO"] is used to connote ``match the string @racket["FOO"] exactly'' and the symbolic token identifier @racket[FOO] specially connotes ``match any token of type @racket['FOO]''.}
+  Because their underlying meanings are the same, the symbolic token identifier ends up being a notational convenience for readability inside a grammar pattern. Typically, the literal string @racket["FOO"] is used to connote ``match the string @racket["FOO"] exactly'' and the symbolic token identifier @racket[FOO] specially connotes ``match any token of type @racket['FOO]''.
+
+  You @bold{cannot} use the literal string @racket["error"] as a terminal in a grammar, because it's reserved for @tt{brag}. You can, however, adjust your lexer to package it inside a token structure — say, @racket[(token ERROR "error")] — and then use the symbolic token identifier @racket[ERROR] in the grammar to match this token structure.
+}
 
  @item{a @tech{rule identifier}}
  @item{a @deftech{choice pattern}: a sequence of @tech{pattern}s delimited with @litchar{|} characters.}
