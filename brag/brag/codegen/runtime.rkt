@@ -68,24 +68,24 @@
   
   (define (permissive-tokenizer)
     (define next-token (tokenizer-thunk))
-    (let loop ([next-token next-token])
+    (let loop ([next-token next-token][start no-position][end no-position])
       (match next-token
         [(or (? eof-object?) (? void?))
-         (lookup 'EOF eof no-position no-position)]
+         (lookup 'EOF eof start end)]
         
         [(? symbol?)
-         (lookup next-token next-token no-position no-position)]
+         (lookup next-token next-token start end)]
         
         [(? string?)
-         (lookup (string->symbol next-token) next-token no-position no-position)]
+         (lookup (string->symbol next-token) next-token start end)]
         
         [(? char?)
-         (lookup (string->symbol (string next-token)) next-token no-position no-position)]
+         (lookup (string->symbol (string next-token)) next-token start end)]
         
         ;; Compatibility 
         [(? lex:token?)
          (loop (token (lex:token-name next-token)
-                      (lex:token-value next-token)))]
+                      (lex:token-value next-token)) start end)]
         
         [(token-struct type val offset line column span skip?)
          (cond [skip?
@@ -108,8 +108,11 @@
                 ((current-tokenizer-error-handler) type val 
                                                    offset line column span)])]
         
+        ;; for the next two cases:
+        ;; carry the token's start and end position into the `a-position-token` recursion
+        ;; so that if an error arises, it's reported as coming from the location of the containing token
         [(lex:position-token t s e)
-         (define a-position-token (loop t))
+         (define a-position-token (loop t s e))
          (lex:position-token (lex:position-token-token a-position-token)
                              (if (no-position? (lex:position-token-start-pos a-position-token))
                                  s
@@ -119,13 +122,15 @@
                                  (lex:position-token-end-pos a-position-token)))]
 
         [(lex:srcloc-token t loc)
-         (define a-position-token (loop t))
+         (define s (lex:position (srcloc-position loc) (srcloc-line loc) (srcloc-column loc)))
+         (define e (lex:position (+ (srcloc-position loc) (srcloc-span loc)) #f #f))
+         (define a-position-token (loop t s e))
          (lex:position-token (lex:position-token-token a-position-token)
                              (if (no-position? (lex:position-token-start-pos a-position-token))
-                                 (lex:position (srcloc-position loc) (srcloc-line loc) (srcloc-column loc))
+                                 s
                                  (lex:position-token-start-pos a-position-token))
                              (if (no-position? (lex:position-token-start-pos a-position-token))
-                                 (lex:position (+ (srcloc-position loc) (srcloc-span loc)) #f #f)
+                                 e
                                  (lex:position-token-end-pos a-position-token)))]
         
         [else
