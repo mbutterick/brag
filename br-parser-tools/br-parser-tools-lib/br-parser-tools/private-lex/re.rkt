@@ -172,7 +172,7 @@
         ((and (= 0 low) (or (= 0 high) (eq? z r))) e)
         ((and (= 1 low) (= 1 high)) r)
         ((and (repeatR? r)
-              (eq? (repeatR-high r) +inf.0)
+              (eqv? (repeatR-high r) +inf.0)
               (or (= 0 (repeatR-low r))
                   (= 1 (repeatR-low r))))
          (build-repeat (* low (repeatR-low r))

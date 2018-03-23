@@ -84,7 +84,7 @@
                                      stx
                                      (car arg-list)))
                (unless (or (and (number? high) (exact? high) (integer? high) (>= high 0))
-                           (eq? high +inf.0))
+                           (eqv? high +inf.0))
                  (raise-syntax-error #f
                                      "not a non-negative exact integer or +inf.0"
                                      stx
