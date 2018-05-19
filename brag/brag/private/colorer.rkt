@@ -14,21 +14,20 @@
    [id (token 'ID lexeme)]
    [any-char (token 'OTHER lexeme)]))
 
-(define default-backup 10)
-(define (color-brag port [backup default-backup] [in-string? #f])
+(define (color-brag port)
   (define srcloc-tok (brag-syntax-lexer port))
-  (if (eof-object? srcloc-tok)
-      (values srcloc-tok 'eof #f #f #f 0 #f)
-      (match-let* ([(srcloc-token (token-struct type val _ _ _ _ _) (srcloc _ _ _ posn span)) srcloc-tok]
-                   [(cons start end) (cons posn (+ posn span))]
-                   [(cons _ cat) (or (assq type
-                                           '((ID . symbol)
-                                             (LIT . string)
-                                             (MISC . parenthesis)
-                                             (WHITE . whitespace)
-                                             (COMMENT . comment)))
-                                     (cons 'OTHER 'no-color))])
-        (values val cat #f start end backup #f))))
+  (cond
+    [(eof-object? srcloc-tok) (values srcloc-tok 'eof #f #f #f)]
+    [else
+     (match-define (srcloc-token (token-struct type val _ _ _ _ _) (srcloc _ _ _ posn span)) srcloc-tok)
+     (match-define (list start end) (list posn (+ posn span)))
+     (values val (case type
+                   [(ID) 'symbol]
+                   [(LIT) 'string]
+                   [(MISC) 'parenthesis]
+                   [(WHITE) 'whitespace]
+                   [(COMMENT) 'comment]
+                   [else 'no-color]) #f start end)]))
 
 (module+ test
   (require rackunit)
@@ -40,11 +39,11 @@
                                     (open-input-string str))])
       annotation))
 
-  (check-equal? (apply-colorer "foo") `(("foo" symbol #f 1 4 ,default-backup #f)))
-  (check-equal? (apply-colorer "'str'") `(("'str'" string #f 1 6 ,default-backup #f)))
-  (check-equal? (apply-colorer "(foo)+") `(("(" parenthesis #f 1 2 ,default-backup #f)
-                                           ("foo" symbol #f 2 5 ,default-backup #f)
-                                           (")" parenthesis #f 5 6 ,default-backup #f)
-                                           ("+" parenthesis #f 6 7 ,default-backup #f)))
-  (check-equal? (apply-colorer "; rem") `(("; rem" comment #f 1 6 ,default-backup #f)))
-  (check-equal? (apply-colorer "◊") `(("◊" no-color #f 1 4 ,default-backup #f))))
+  (check-equal? (apply-colorer "foo") `(("foo" symbol #f 1 4)))
+  (check-equal? (apply-colorer "'str'") `(("'str'" string #f 1 6)))
+  (check-equal? (apply-colorer "(foo)+") `(("(" parenthesis #f 1 2)
+                                           ("foo" symbol #f 2 5)
+                                           (")" parenthesis #f 5 6)
+                                           ("+" parenthesis #f 6 7)))
+  (check-equal? (apply-colorer "; rem") `(("; rem" comment #f 1 6)))
+  (check-equal? (apply-colorer "◊") `(("◊" no-color #f 1 4))))
