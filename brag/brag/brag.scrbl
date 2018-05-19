@@ -3,8 +3,8 @@
           racket/date
           file/md5
           (for-label racket
+                     brag
                      brag/support
-                     brag/examples/nested-word-list
                      (only-in br-parser-tools/lex lexer-src-pos)
                      (only-in syntax/parse syntax-parse ~literal)))
 
@@ -888,7 +888,6 @@ Otherwise, @tt{brag} should be fairly tolerant and permit even ambiguous
 grammars.
 
 @subsection{Semantics}
-@declare-exporting[brag/examples/nested-word-list]
 
 A program written in @litchar{#lang brag} produces a module that provides a few
 bindings. The most important of these is @racket[parse]:
