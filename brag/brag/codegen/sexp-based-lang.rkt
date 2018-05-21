@@ -84,13 +84,26 @@
 
 
 (require (for-syntax racket/base
-                     "codegen.rkt"))
+                     "codegen.rkt"
+                     syntax/strip-context))
 
-(provide rules
-         (rename-out [#%plain-module-begin #%module-begin])
-         #%top-interaction)
+(provide rules 
+         (rename-out [my-module-begin #%module-begin])
+         #%top-interaction #%top #%app #%datum)
 
-(define-syntax (rules stx)
+
+(define-syntax (my-module-begin module-stx)
+  (syntax-case module-stx ()
+    [(_ RULES-STX)
+     (with-syntax ([RULES-STX (for/fold ([stx #'RULES-STX])
+                                        ([id (in-list '(parse parse-to-datum parse-tree make-rule-parser all-token-types))])
+                                (syntax-property stx id (syntax-local-introduce (replace-context module-stx (datum->syntax #f id)))))])
+       #`(#%module-begin
+          RULES-STX
+          (provide (all-defined-out))))]))
+
+
+(define-syntax (rules rules-stx)
   (rules-codegen #:parser-provider-module 'brag/cfg-parser/cfg-parser ;; 'br-parser-tools/yacc 
                  #:parser-provider-form   'cfg-parser                 ;; 'parser
-                 stx))
+                 rules-stx))

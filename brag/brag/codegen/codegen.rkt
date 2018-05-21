@@ -18,19 +18,19 @@
 ;; Generates the body of the module.
 ;; FIXME: abstract this so we can just call (rules ...) without
 ;; generating the whole module body.
-(define (rules-codegen stx 
+(define (rules-codegen rules-stx 
                        #:parser-provider-module [parser-provider-module 'br-parser-tools/yacc]
                        #:parser-provider-form [parser-provider-form 'parser])
-  (syntax-case stx ()
-    [(_  r ...)
+  (syntax-case rules-stx ()
+    [(_ RULE ...)
      (begin
        ;; (listof stx)
-       (define rules (syntax->list #'(r ...)))
+       (define rules (syntax->list #'(RULE ...)))
        
        (when (empty? rules)
          (raise-syntax-error 'brag
                              (format "The grammar does not appear to have any rules")
-                             stx))
+                             rules-stx))
        
        (check-all-rules-defined! rules)
        (check-all-rules-no-duplicates! rules)
@@ -83,8 +83,13 @@
                            implicit-token-types)]
                      [generated-grammar #`(grammar #,@generated-rule-codes)]
                      [parser-module parser-provider-module]
-                     [parser-form parser-provider-form])
-         (quasisyntax/loc stx
+                     [parser-form parser-provider-form]
+                     [PARSE (syntax-local-introduce (or (syntax-property rules-stx 'parse) (error 'no-parse-id-prop)))]
+                     [PARSE-TO-DATUM (syntax-local-introduce (or (syntax-property rules-stx 'parse-to-datum) (error 'no-parse-to-datum-id-prop)))]
+                     [PARSE-TREE (syntax-local-introduce (or (syntax-property rules-stx 'parse-tree) (error 'no-parse-tree-id-prop)))]
+                     [MAKE-RULE-PARSER (syntax-local-introduce (or (syntax-property rules-stx 'make-rule-parser) (error 'no-make-rule-parser-id-prop)))]
+                     [ALL-TOKEN-TYPES (syntax-local-introduce (or (syntax-property rules-stx 'all-token-types) (error 'no-all-token-types-id-prop)))])
+         (quasisyntax/loc rules-stx
            (begin             
              (require br-parser-tools/lex
                       parser-module
@@ -94,9 +99,11 @@
                       racket/set
                       (for-syntax syntax/parse racket/base))
              
-             (provide parse
-                      make-rule-parser
-                      all-token-types
+             (provide PARSE
+                      PARSE-TO-DATUM
+                      PARSE-TREE
+                      MAKE-RULE-PARSER
+                      ALL-TOKEN-TYPES
                       #;current-source
                       #;current-parser-error-handler
                       #;current-tokenizer-error-handler
@@ -106,7 +113,7 @@
              (define-tokens enumerated-tokens (token-type ...))
              
              ;; all-token-types lists all the tokens (except for EOF)
-             (define all-token-types 
+             (define ALL-TOKEN-TYPES 
                (set-remove (set 'token-type ...) 'EOF))
              
              ;; For internal use by the permissive tokenizer only:
@@ -123,7 +130,7 @@
                                 ...
                                 [(eof) (token eof)]))
              
-             (define-syntax (make-rule-parser stx-2)
+             (define-syntax (MAKE-RULE-PARSER stx-2)
                (syntax-parse stx-2
                  [(_ start-rule:id)
                   (begin
@@ -137,7 +144,7 @@
                                           (format "Rule ~a is not defined in the grammar" (syntax-e #'start-rule))
                                           stx-2))
                     
-                    (define recolored-start-rule (datum->syntax (syntax #,stx) (syntax-e #'start-rule)))
+                    (define recolored-start-rule (datum->syntax (syntax #,rules-stx) (syntax-e #'start-rule)))
                     #`(let ([THE-GRAMMAR (parser-form (tokens enumerated-tokens)
                                                       (src-pos)
                                                       (start #,recolored-start-rule)
@@ -151,20 +158,19 @@
                                        (THE-GRAMMAR next-token)]
                                       [(source tokenizer)
                                        (parameterize ([current-source source])
-                                         (parse tokenizer))])
+                                         (PARSE tokenizer))])
                          (string->symbol (format "~a-rule-parser" 'start-rule)))))]))
              
-             (define parse (make-rule-parser start-id))
-             (provide parse-to-datum parse-tree)
+             (define PARSE (procedure-rename (MAKE-RULE-PARSER start-id) 'parse))
              
-             (define (parse-to-datum x)
-               (let loop ([x (syntax->datum (parse x))])
+             (define (PARSE-TO-DATUM x)
+               (let loop ([x (syntax->datum (PARSE x))])
                  (cond
                    [(list? x) (map loop x)]
                    [(char? x) (string x)]
                    [else x])))
 
-             (define parse-tree parse-to-datum)))))]))
+             (define PARSE-TREE PARSE-TO-DATUM)))))]))
 
 
 ;; Given a flattened rule, returns a syntax for the code that
