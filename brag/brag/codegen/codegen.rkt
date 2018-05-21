@@ -161,7 +161,7 @@
                                          (PARSE tokenizer))])
                          (string->symbol (format "~a-rule-parser" 'start-rule)))))]))
              
-             (define PARSE (procedure-rename (MAKE-RULE-PARSER start-id) 'parse))
+             (define PARSE (procedure-rename (MAKE-RULE-PARSER start-id) 'PARSE))
              
              (define (PARSE-TO-DATUM x)
                (let loop ([x (syntax->datum (PARSE x))])
