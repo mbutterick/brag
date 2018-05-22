@@ -87,7 +87,8 @@
                      "codegen.rkt"
                      syntax/strip-context))
 
-(provide rules 
+(provide rules
+         (except-out (all-from-out racket/base) #%module-begin)
          (rename-out [my-module-begin #%module-begin])
          #%top-interaction #%top #%app #%datum)
 
