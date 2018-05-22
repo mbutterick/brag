@@ -89,19 +89,18 @@
 
 (provide rules
          (except-out (all-from-out racket/base) #%module-begin)
-         (rename-out [my-module-begin #%module-begin])
-         #%top-interaction #%top #%app #%datum)
+         (rename-out [my-module-begin #%module-begin]))
 
 
 (define-syntax (my-module-begin module-stx)
   (syntax-case module-stx ()
     [(_ RULES-STX)
      (with-syntax ([RULES-STX (for/fold ([stx #'RULES-STX])
-                                        ([id (in-list '(parse parse-to-datum parse-tree make-rule-parser all-token-types))])
-                                (syntax-property stx id (syntax-local-introduce (replace-context module-stx (datum->syntax #f id)))))])
-       #`(#%module-begin
-          RULES-STX
-          (provide (all-defined-out))))]))
+                                        ([sym (in-list '(parse parse-to-datum parse-tree make-rule-parser all-token-types))])
+                                (syntax-property stx sym (syntax-local-introduce (replace-context module-stx (datum->syntax #f sym)))))])
+       #'(#%module-begin
+          (provide (all-defined-out))
+          RULES-STX))]))
 
 
 (define-syntax (rules rules-stx)
