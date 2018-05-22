@@ -104,15 +104,15 @@
   (λ(stx)
     (syntax-case stx ()
       [(_ OPEN CLOSE)
-       ;; (:seq any-string CLOSE any-string) pattern makes it non-greedy
-       #'(:seq OPEN (complement (:seq any-string CLOSE any-string)) CLOSE)])))
+       #'(:seq (from/stop-before OPEN CLOSE) CLOSE)])))
 
 (provide from/stop-before)
 (define-lex-trans from/stop-before
   (λ(stx)
     (syntax-case stx ()
       [(_ OPEN CLOSE)
-       #'(:seq OPEN (:* (:~ CLOSE)))])))
+       ;; (:seq any-string CLOSE any-string) pattern makes it non-greedy
+       #'(:seq OPEN (complement (:seq any-string CLOSE any-string)))])))
 
 (provide uc+lc)
 (define-lex-trans uc+lc
