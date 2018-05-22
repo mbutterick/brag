@@ -76,11 +76,9 @@
         [(? symbol?)
          (lookup next-token next-token start end)]
         
-        [(? string?)
-         (lookup (string->symbol next-token) next-token start end)]
-        
-        [(? char?)
-         (lookup (string->symbol (string next-token)) next-token start end)]
+        [(or (? string?) (? char?))
+         (define next-token-str (format "~a" next-token))
+         (lookup (string->symbol next-token-str) next-token-str start end)]
         
         ;; Compatibility 
         [(? lex:token?)

@@ -16,4 +16,12 @@
 (check-equal? 
  (syntax->datum
   (parse "[[[{}]],[],[[{}]]]"))
- '(json (array #\[ (json (array #\[ (json (array #\[ (json) #\])) #\])) #\, (json (array #\[ #\])) #\, (json (array #\[ (json (array #\[ (json) #\])) #\])) #\])))
+ '(json
+    (array
+     "["
+     (json (array "[" (json (array "[" (json) "]")) "]"))
+     ","
+     (json (array "[" "]"))
+     ","
+     (json (array "[" (json (array "[" (json) "]")) "]"))
+     "]")))

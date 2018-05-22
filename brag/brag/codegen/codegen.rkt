@@ -167,7 +167,6 @@
                (let loop ([x (syntax->datum (PARSE x))])
                  (cond
                    [(list? x) (map loop x)]
-                   [(char? x) (string x)]
                    [else x])))
 
              (define PARSE-TREE PARSE-TO-DATUM)))))]))
