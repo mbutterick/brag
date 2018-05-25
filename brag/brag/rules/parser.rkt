@@ -59,7 +59,7 @@
 (define hide-char #\/)
 (define splice-char #\@)
 
-(define id-separators-pattern "((:)|(::=))")
+(define id-separators-pattern "(:|::=)")
 
 ;; grammar-parser: (-> token) -> (listof rule)
 (define grammar-parser
