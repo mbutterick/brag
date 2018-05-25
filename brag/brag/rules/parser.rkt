@@ -59,6 +59,8 @@
 (define hide-char #\/)
 (define splice-char #\@)
 
+(define id-separators-pattern "((:)|(::=))")
+
 ;; grammar-parser: (-> token) -> (listof rule)
 (define grammar-parser
   (parser
@@ -84,7 +86,7 @@
     [rule
      [(RULE_HEAD pattern)
       (begin 
-        (define trimmed (regexp-replace #px"\\s*:$" $1 ""))
+        (define trimmed (regexp-replace (pregexp (format "\\s*~a$" id-separators-pattern)) $1 ""))
         (rule (position->pos $1-start-pos)
               (position->pos $2-end-pos)
               (lhs-id (position->pos $1-start-pos)
@@ -98,7 +100,7 @@
      
      [(RULE_HEAD_HIDDEN pattern) ; slash indicates hiding
       (begin
-        (define trimmed (cadr (regexp-match (pregexp (format "~a(\\S+)\\s*:$" hide-char)) $1)))
+        (define trimmed (cadr (regexp-match (pregexp (format "~a(\\S+)\\s*~a$" hide-char id-separators-pattern)) $1)))
         (rule (position->pos $1-start-pos)
               (position->pos $2-end-pos)
               (lhs-id (position->pos $1-start-pos)
@@ -113,7 +115,7 @@
      
      [(RULE_HEAD_SPLICED pattern) ; atsign indicates splicing
       (begin
-        (define trimmed (cadr (regexp-match (pregexp (format "~a(\\S+)\\s*:$" splice-char)) $1)))
+        (define trimmed (cadr (regexp-match (pregexp (format "~a(\\S+)\\s*~a$" splice-char id-separators-pattern)) $1)))
         (rule (position->pos $1-start-pos)
               (position->pos $2-end-pos)
               (lhs-id (position->pos $1-start-pos)

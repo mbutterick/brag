@@ -30,6 +30,7 @@
   )
 
 (define-lex-abbrev id (:& (complement (:+ digit)) (:+ id-char)))
+(define-lex-abbrev id-separator (:or ":" "::="))
 
 (define lex/1
   (lexer-src-pos
@@ -76,11 +77,11 @@
     (return-without-pos (lex/1 input-port))]
    [(eof)
     (token-EOF lexeme)]
-   [(:: id (:* whitespace) ":")
+   [(:: id (:* whitespace) id-separator)
     (token-RULE_HEAD lexeme)]
-   [(:: hide-char id (:* whitespace) ":")
+   [(:: hide-char id (:* whitespace) id-separator)
     (token-RULE_HEAD_HIDDEN lexeme)]
-   [(:: splice-char id (:* whitespace) ":")
+   [(:: splice-char id (:* whitespace) id-separator)
     (token-RULE_HEAD_SPLICED lexeme)]
    [id
     (token-ID lexeme)]
