@@ -61,6 +61,7 @@ brag/codegen/sexp-based-lang
 (define (my-get-info key default default-filter)
   (case key
     [(color-lexer) (dynamic-require 'brag/private/colorer 'color-brag (λ () #f))]
+    [(drracket:indentation) (dynamic-require 'brag/private/indenter 'indent-brag (λ () #f))]
     [else
      (default-filter key default)]))
 
