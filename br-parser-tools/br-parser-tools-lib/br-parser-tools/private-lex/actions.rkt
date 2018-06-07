@@ -1,4 +1,4 @@
-#lang scheme/base
+#lang racket/base
 
 (provide (all-defined-out))
 (require syntax/stx)
@@ -10,7 +10,7 @@
     ((null? rules) none)
     (else
      (syntax-case (car rules) ()
-       (((special) act)
+       [((special) ACT)
         (and (identifier? #'special) (module-or-top-identifier=? (syntax special) which-special))
-        (syntax act))
-       (_ (get-special-action (cdr rules) which-special none))))))
+        #'ACT]
+       [_ (get-special-action (cdr rules) which-special none)]))))
