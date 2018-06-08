@@ -1,4 +1,4 @@
-#lang setup/infotab
+#lang info
 
 (define version "1.0")
 (define deps '("base" "br-parser-tools-lib" "rackunit-lib"))
