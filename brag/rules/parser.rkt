@@ -164,9 +164,9 @@
                              1 #f $1)]
             [(regexp-match #px"^\\{(\\d+)?,?(\\d+)?\\}$" $2) ; "{min,max}" with both min & max optional
              => (λ (m)
-                  (match-define (cons min-repeat max-repeat)
+                  (match-define (list min-repeat max-repeat)
                     (match m
-                      [(list _ min max) (cons (if min (string->number min) 0)
+                      [(list _ min max) (list (if min (string->number min) 0)
                                               (and max (string->number max)))]))
                   (pattern-repeat (position->pos $1-start-pos)
                                   (position->pos $2-end-pos)

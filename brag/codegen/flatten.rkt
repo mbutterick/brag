@@ -109,15 +109,17 @@
                               [(inferred-id NAME repeat) SUB-PAT ...]
                               MIN-REPEAT-SUB-PATS)
                       inferred-rules)))]
+           
            [(repeat MIN MAX SUB-PAT)
             ;; finite repeat
-            (let ([min (syntax-e #'MIN)]
-                  [max (syntax-e #'MAX)])
-              (recur
-                  (with-syntax ([(MIN-SUBPAT ...) (make-list min #'SUB-PAT)]
-                                [(EXTRA-SUBPAT ...) (make-list (- max min) #'SUB-PAT)])
-                    #'(rule NAME (seq MIN-SUBPAT ... (maybe EXTRA-SUBPAT) ...)))
-                #f))]
+            (begin
+              (define min (syntax-e #'MIN))
+              (define max (syntax-e #'MAX))
+              (define new-rule-stx (with-syntax ([(MIN-SUBPAT ...) (make-list min #'SUB-PAT)]
+                                                 [(EXTRA-SUBPAT ...) (make-list (- max min) #'SUB-PAT)])
+                                     ;; has to keep the same name to work correctly
+                                     #'(rule NAME (seq MIN-SUBPAT ... (maybe EXTRA-SUBPAT) ...))))
+              (recur new-rule-stx #f))]
 
            [(maybe SUB-PAT)
             (begin
