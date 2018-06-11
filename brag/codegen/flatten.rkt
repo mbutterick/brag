@@ -1,7 +1,8 @@
 #lang racket/base
 (require brag/rules/stx-types
+         racket/list
          (for-syntax racket/base))
-
+(require (except-in sugar/debug repeat))
 (provide flatten-rule
          flatten-rules
          prim-rule)
@@ -102,21 +103,32 @@
             (begin
               (define-values (inferred-rules new-sub-pats)
                 (lift-nonprimitive-pattern #'sub-pat))
-              (with-syntax ([(sub-pat ...) new-sub-pats])
+              (report/file (syntax-e #'min))
+              (with-syntax ([(sub-pat ...) new-sub-pats]
+                            [MIN-REPEAT-SUB-PATS (apply append (make-list (syntax-e #'min) new-sub-pats))])
                 (cons (cond [(= (syntax-e #'min) 0)
-                             #`(head origin name
-                                     [(inferred-id name repeat) sub-pat ...]
-                                     [])]
-                            [(= (syntax-e #'min) 1)
-                             #`(head origin name
-                                     [(inferred-id name repeat) sub-pat ...]
-                                     [sub-pat ...])])
+                               #`(head origin name
+                                       [(inferred-id name repeat) sub-pat ...]
+                                       [])]
+                              [(= (syntax-e #'min) 1)
+                               #`(head origin name
+                                       [(inferred-id name repeat) sub-pat ...]
+                                       [sub-pat ...])]
+                              [(= (syntax-e #'min) 2)
+                               #`(head origin name
+                                       [(inferred-id name repeat) sub-pat ...]
+                                       [sub-pat ... sub-pat ...])])
+                        inferred-rules)
+                #;(cons (report/file #`(head origin name
+                              [(inferred-id name repeat) sub-pat ...]
+                              MIN-REPEAT-SUB-PATS))
                       inferred-rules)))]
 
            [(maybe sub-pat)
             (begin
               (define-values (inferred-rules new-sub-pats)
                 (lift-nonprimitive-pattern #'sub-pat))
+              (report*/file #'pat #'sub-pat)
               (with-syntax ([(sub-pat ...) new-sub-pats])
                 (cons #'(head origin name
                               [sub-pat ...]
