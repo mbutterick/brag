@@ -63,14 +63,14 @@
               (list (rule (p 1) (p 16)
                           (lhs-id (p 1) (p 5) "expr" #f)
                           (pattern-repeat (p 8) (p 16)
-                                      0
+                                      0 #f
                                       (pattern-lit (p 8) (p 15) "hello" #f)))))
 
 (check-equal? (grammar-parser (tokenize (open-input-string "expr : 'hello'+")))
               (list (rule (p 1) (p 16)
                           (lhs-id (p 1) (p 5) "expr" #f)
                           (pattern-repeat (p 8) (p 16)
-                                      1
+                                      1 #f
                                       (pattern-lit (p 8) (p 15) "hello" #f)))))
 
 (check-equal? (grammar-parser (tokenize (open-input-string "expr : [/'hello']")))
@@ -114,20 +114,20 @@
               (list (rule (p 1) (p 22)
                           (lhs-id (p 1) (p 5) "expr" #f)
                           (pattern-seq (p 8) (p 22) (list (pattern-id (p 8) (p 11) "one" #f)
-                                              (pattern-repeat (p 12) (p 16) 0 (pattern-id (p 12) (p 15) "two" #f))
+                                              (pattern-repeat (p 12) (p 16) 0 #f (pattern-id (p 12) (p 15) "two" #f))
                                               (pattern-id (p 17) (p 22) "three" #f))))))
 
 (check-equal? (grammar-parser (tokenize (open-input-string "expr : one two+ three")))
               (list (rule (p 1) (p 22)
                           (lhs-id (p 1) (p 5) "expr" #f)
                           (pattern-seq (p 8) (p 22) (list (pattern-id (p 8) (p 11) "one" #f)
-                                              (pattern-repeat (p 12) (p 16) 1 (pattern-id (p 12) (p 15) "two" #f))
+                                              (pattern-repeat (p 12) (p 16) 1 #f (pattern-id (p 12) (p 15) "two" #f))
                                               (pattern-id (p 17) (p 22) "three" #f))))))
 
 (check-equal? (grammar-parser (tokenize (open-input-string "expr : (one two)+ three")))
               (list (rule (p 1) (p 24)
                           (lhs-id (p 1) (p 5) "expr" #f)
-                          (pattern-seq (p 8) (p 24) (list (pattern-repeat (p 8) (p 18) 1
+                          (pattern-seq (p 8) (p 24) (list (pattern-repeat (p 8) (p 18) 1 #f
                                                                           (pattern-seq (p 8) (p 17)
                                                                                        (list (pattern-id (p 9) (p 12) "one" #f)
                                                                                              (pattern-id (p 13) (p 16) "two" #f))))
@@ -142,7 +142,7 @@ EOF
 )))
               (list (rule (p 1) (p 17)
                           (lhs-id (p 1) (p 9) "statlist" #f)
-                          (pattern-repeat (p 12) (p 17) 1 (pattern-id (p 12) (p 16) "stat" #f)))
+                          (pattern-repeat (p 12) (p 17) 1 #f (pattern-id (p 12) (p 16) "stat" #f)))
                     (rule (p 18) (p 54)
                           (lhs-id (p 18) (p 22) "stat" #f)
                           (pattern-choice (p 24) (p 54) (list (pattern-seq (p 24) (p 35) (list (pattern-token (p 24) (p 26) "ID" #f)

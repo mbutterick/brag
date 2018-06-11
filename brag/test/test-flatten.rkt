@@ -95,23 +95,23 @@
 
 ;; repeat
 (check-equal? (map syntax->datum
-                   (flatten-rule #'(rule rule-2+ (repeat 0 (id rule-2)))))
+                   (flatten-rule #'(rule rule-2+ (repeat 0 #f (id rule-2)))))
               '((prim-rule repeat rule-2+
                            [(inferred-id rule-2+ repeat) (id rule-2)]
                            [])))
 (check-equal? (map syntax->datum
-                   (flatten-rule #'(rule rule-2+ (repeat 0 (seq (lit "+") (id rule-2))))))
+                   (flatten-rule #'(rule rule-2+ (repeat 0 #f (seq (lit "+") (id rule-2))))))
               '((prim-rule repeat rule-2+
                            [(inferred-id rule-2+ repeat) (lit "+") (id rule-2)]
                            [])))
 
 (check-equal? (map syntax->datum
-                   (flatten-rule #'(rule rule-2+ (repeat 1 (id rule-2)))))
+                   (flatten-rule #'(rule rule-2+ (repeat 1 #f (id rule-2)))))
               '((prim-rule repeat rule-2+
                            [(inferred-id rule-2+ repeat) (id rule-2)]
                            [(id rule-2)])))
 (check-equal? (map syntax->datum
-                   (flatten-rule #'(rule rule-2+ (repeat 1 (seq (lit "-") (id rule-2))))))
+                   (flatten-rule #'(rule rule-2+ (repeat 1 #f (seq (lit "-") (id rule-2))))))
               '((prim-rule repeat rule-2+
                            [(inferred-id rule-2+ repeat) (lit "-") (id rule-2)]
                            [(lit "-") (id rule-2)])))
@@ -137,7 +137,7 @@
 ;; choice, maybe, repeat
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule sexp (choice (lit "x")
-                                                      (maybe (repeat 1 (lit "y")))))
+                                                      (maybe (repeat 1 #f (lit "y")))))
                                  #:fresh-name (make-fresh-name)))
               '((prim-rule choice sexp
                            [(lit "x")]
@@ -172,7 +172,7 @@
 
 ;; seq, repeat
 (check-equal? (map syntax->datum
-                   (flatten-rule #'(rule expr (seq (id term) (repeat 0 (seq (lit "+") (id term)))))
+                   (flatten-rule #'(rule expr (seq (id term) (repeat 0 #f (seq (lit "+") (id term)))))
                                  #:fresh-name (make-fresh-name)))
               '((prim-rule seq expr [(id term) (inferred-id r1 repeat)])
                 (inferred-prim-rule repeat r1 [(inferred-id r1 repeat) (lit "+") (id term)] [])))
@@ -181,8 +181,8 @@
 ;; larger example: simple arithmetic
 (check-equal? (map syntax->datum
                    (flatten-rules (syntax->list
-                                   #'((rule expr (seq (id term) (repeat 0 (seq (lit "+") (id term)))))
-                                      (rule term (seq (id factor) (repeat 0 (seq (lit "*") (id factor)))))
+                                   #'((rule expr (seq (id term) (repeat 0 #f (seq (lit "+") (id term)))))
+                                      (rule term (seq (id factor) (repeat 0 #f (seq (lit "*") (id factor)))))
                                       (rule factor (token INT))))
                                   #:fresh-name (make-fresh-name)))
               
