@@ -162,12 +162,17 @@
              (pattern-repeat (position->pos $1-start-pos)
                              (position->pos $2-end-pos)
                              1 #f $1)]
-            [(regexp-match #px"^\\{(\\d+)?,?(\\d+)?\\}$" $2) ; "{min,max}" with both min & max optional
+            [(regexp-match #px"^\\{(\\d+)?(,)?(\\d+)?\\}$" $2) ; "{min,max}" with both min & max optional
              => (λ (m)
                   (match-define (list min-repeat max-repeat)
                     (match m
-                      [(list _ min max) (list (if min (string->number min) 0)
-                                              (and max (string->number max)))]))
+                      [(list _ min range? max) (let ([min (if min (string->number min) 0)])
+                                                 (list
+                                                  min
+                                                  (cond
+                                                    [(and range? max) (string->number max)]
+                                                    [(and (not range?) (not max)) min] ; {3} -> {3,3}
+                                                    [(not max) #f])))]))
                   (pattern-repeat (position->pos $1-start-pos)
                                   (position->pos $2-end-pos)
                                   min-repeat max-repeat $1))]
