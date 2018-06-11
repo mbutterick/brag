@@ -31,7 +31,8 @@
 (struct pattern-choice pattern (vals)
         #:transparent)
 
-(struct pattern-repeat pattern (min ;; either 0 or 1
+(struct pattern-repeat pattern (min
+                                max
                                 val)
         #:transparent)
 

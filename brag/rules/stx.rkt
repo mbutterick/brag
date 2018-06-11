@@ -80,8 +80,8 @@
       'hide hide)]
     [(struct pattern-choice (start end vals))
      (datum->syntax #f`(choice ,@(map recur vals)) source-location)]
-    [(struct pattern-repeat (start end min val))
-     (datum->syntax #f`(repeat ,min ,(recur val)) source-location)]
+    [(struct pattern-repeat (start end min max val))
+     (datum->syntax #f`(repeat ,min ,max ,(recur val)) source-location)]
     [(struct pattern-maybe (start end val))
      (datum->syntax #f`(maybe ,(recur val)) source-location)]
     [(struct pattern-seq (start end vals))

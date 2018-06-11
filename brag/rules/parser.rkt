@@ -4,7 +4,6 @@
          racket/list
          racket/match
          "rule-structs.rkt")
-(require sugar/debug)
 
 ;; A parser for grammars.
 
@@ -158,21 +157,20 @@
       (cond [(string=? $2 "*")
              (pattern-repeat (position->pos $1-start-pos)
                              (position->pos $2-end-pos)
-                             0 $1)]
+                             0 #f $1)]
             [(string=? $2 "+")
              (pattern-repeat (position->pos $1-start-pos)
                              (position->pos $2-end-pos)
-                             1 $1)]
+                             1 #f $1)]
             [(regexp-match #px"^\\{(\\d+)?,?(\\d+)?\\}$" $2) ; "{min,max}" with both min & max optional
              => (λ (m)
                   (match-define (cons min-repeat max-repeat)
                     (match m
                       [(list _ min max) (cons (if min (string->number min) 0)
                                               (and max (string->number max)))]))
-                  (report/file min-repeat)
                   (pattern-repeat (position->pos $1-start-pos)
                                   (position->pos $2-end-pos)
-                                  min-repeat $1))]
+                                  min-repeat max-repeat $1))]
             [else
              (error 'grammar-parse "unknown repetition operator ~e" $2)])]
      [(atomic-pattern)
@@ -233,8 +231,8 @@
      (pattern-lit start-pos end-pos v (or hide? h))]
     [(pattern-choice _ _ vs)
      (pattern-choice start-pos end-pos vs)]
-    [(pattern-repeat _ _ m v)
-     (pattern-repeat start-pos end-pos m v)]
+    [(pattern-repeat _ _ min max v)
+     (pattern-repeat start-pos end-pos min max v)]
     [(pattern-maybe _ _ v)
      (pattern-maybe start-pos end-pos v)]
     [(pattern-seq _ _ vs)
