@@ -64,8 +64,11 @@
     (token-SPLICE lexeme)]
    ["|"
     (token-PIPE lexeme)]
-   [(:or "+" "*")
-    (token-REPEAT lexeme)]
+   [(:or "+" "*"
+         ;; todo: consolidate next two patterns?
+         (:: "{" (:* digit) "}")
+         (:: "{" (:* digit) "," (:* digit) "}"))
+    (token-REPEAT (let () (println lexeme) lexeme))]
    [whitespace
     ;; Skip whitespace
     (return-without-pos (lex/1 input-port))]

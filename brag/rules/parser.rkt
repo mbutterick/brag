@@ -162,6 +162,12 @@
              (pattern-repeat (position->pos $1-start-pos)
                              (position->pos $2-end-pos)
                              1 $1)]
+            [(regexp-match #px"^\\{(\\d+)?,?(\\d+)?\\}$" $2)
+             => (λ (m)
+                  (define pr (match m
+                      [(list _ min max) (cons (and min (string->number min))
+                                                (and max (string->number max)))]))
+                  (error (format "~a" pr)))]
             [else
              (error 'grammar-parse "unknown repetition operator ~e" $2)])]
      [(atomic-pattern)
