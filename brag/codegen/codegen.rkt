@@ -301,7 +301,7 @@
                   [explicit explicit])
                  ([v (in-list (syntax->list #'(vals ...)))])
          (loop v implicit explicit))]
-      [(repeat min val)
+      [(repeat min max val)
        (loop #'val implicit explicit)]
       [(maybe val)
        (loop #'val implicit explicit)]
@@ -379,7 +379,7 @@
        (for/fold ([acc acc])
                  ([v (in-list (syntax->list #'(vals ...)))])
          (loop v acc))]
-      [(repeat min val)
+      [(repeat min max val)
        (loop #'val acc)]
       [(maybe val)
        (loop #'val acc)]
@@ -425,7 +425,7 @@
            (define a-child (process-pattern v))
            (sat:add-child! an-or-node a-child))
          an-or-node)]
-      [(repeat min val)
+      [(repeat min max val)
        (syntax-case #'min ()
          [0
           (make-leaf)]

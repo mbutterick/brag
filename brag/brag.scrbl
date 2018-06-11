@@ -231,7 +231,7 @@ We write a @tt{brag} program as an BNF grammar, where patterns can be:
 @itemize[
  @item{the names of other rules (e.g. @racket[chunk])}
  @item{literal and symbolic token names (e.g. @racket[";"], @racket[INTEGER])}
- @item{quantified patterns (e.g. @litchar{+} to represent one-or-more repetitions)}
+ @item{quantified patterns (e.g. @litchar{+} to represent one or more repetitions)}
  ]
 The result of a @tt{brag} program is a module with a @racket[parse] function
 that can parse tokens and produce a syntax object as a result.
@@ -661,35 +661,41 @@ A program in the @tt{brag} language consists of the language line
 @litchar{#lang brag}, followed by a collection of @tech{rule}s and
 @tech{line comment}s.
 
-A @deftech{rule} is a sequence consisting of: a @tech{rule identifier}, a colon
-@litchar{":"}, and a @tech{pattern}.
+A @deftech{rule} is a sequence consisting of: a @tech{rule identifier}, a separator (either @litchar{":"} or @litchar{"::="}), and a @tech{pattern}.
 
 A @deftech{rule identifier} is an @tech{identifier} that is not in upper case.
 
 A @deftech{symbolic token identifier} is an @tech{identifier} that is in upper case.
 
-An @deftech{identifier} is a character sequence of letters, numbers, and
-characters in @racket["-.!$%&/<=>?^_~@"]. It must not contain
-@litchar{*} or @litchar{+}, as those characters are used to denote
-quantification.
+An @deftech{identifier} is a sequence of letters, numbers, or
+characters in the set @racket["-.!$%&/<=>?^_~@"]. It must not contain
+@litchar{*}, @litchar{+}, or @litchar|{{}| and @litchar|{}}|, as those characters are used to denote quantification.
 
 
 A @deftech{pattern} is one of the following:
 @itemize[
  @item{an implicit sequence of @tech{pattern}s separated by whitespace}
- @item{a terminal: either a literal string or a @tech{symbolic token identifier}. 
+ @item{a @deftech{terminal}: either a literal string or a @tech{symbolic token identifier}. 
 
-  When used in a pattern, both these terminals will match the same set of inputs. A literal string can match the string itself, or a @racket[token] structure whose type field contains that string (or its symbol form). So @racket["FOO"] would  match @racket["FOO"], @racket[(token "FOO" "bar")], or @racket[(token 'FOO "bar")]. A symbolic token identifier can also match the string version of the identifier, or a @racket[token] whose type field is the symbol or string form of the identifier. So @racket[FOO] would also match @racket["FOO"], @racket[(token 'FOO "bar")], or @racket[(token "FOO" "bar")]. (In every case, the value of a token, like @racket["bar"], can be anything, and may or may not be the same as its type.)
+  When used in a pattern, both kinds of terminals will match the same set of inputs. 
 
-  Because their underlying meanings are the same, the symbolic token identifier ends up being a notational convenience for readability inside a grammar pattern. Typically, the literal string @racket["FOO"] is used to connote ``match the string @racket["FOO"] exactly'' and the symbolic token identifier @racket[FOO] specially connotes ``match any token of type @racket['FOO]''.
+  A literal string can match the string itself, or a @racket[token] structure whose type field contains that string (or its symbol form). So @racket["FOO"] in a rule pattern would match the tokens @racket["FOO"], @racket[(token "FOO" "bar")], or @racket[(token 'FOO "bar")]. 
+
+  A symbolic token identifier can also match the string version of the identifier, or a @racket[token] whose type field is the symbol or string form of the identifier. So @racket[FOO] in a rule pattern would @emph{also} match the tokens @racket["FOO"], @racket[(token 'FOO "bar")], or @racket[(token "FOO" "bar")]. (In every case, the value of a token, like @racket["bar"], can be anything, and may or may not be the same as its type.)
+
+  Because their underlying meanings are the same, the symbolic token identifier ends up being a notational convenience for readability inside a rule pattern. Typically, the literal string @racket["FOO"] is used to connote ``match the string @racket["FOO"] exactly'' and the symbolic token identifier @racket[FOO] specially connotes ``match a token of type @racket['FOO]''.
 
   You @bold{cannot} use the literal string @racket["error"] as a terminal in a grammar, because it's reserved for @tt{brag}. You can, however, adjust your lexer to package it inside a token structure — say, @racket[(token 'ERROR "error")] — and then use the symbolic token identifier @racket[ERROR] in the grammar to match this token structure.
 }
 
  @item{a @tech{rule identifier}}
+ 
  @item{a @deftech{choice pattern}: a sequence of @tech{pattern}s delimited with @litchar{|} characters.}
- @item{a @deftech{quantifed pattern}: a @tech{pattern} followed by either @litchar{*} (``zero or more'') or @litchar{+} (``one or more'')}
+
+ @item{a @deftech{quantified pattern}: a @tech{pattern} followed by either @litchar{*} (``zero or more'') or @litchar{+} (``one or more''). Quantification can also be denoted by integers within curly brackets. So @litchar|{{2}}| means ``exactly 2''; @litchar|{{2,5}}| means ``between 2 and 5, inclusive''; @litchar|{{2,}}| means ``2 or more''; and @litchar|{{,5}}| means ``up to 5''.}
+ 
  @item{an @deftech{optional pattern}: a @tech{pattern} surrounded by @litchar{[} and @litchar{]}}
+ 
  @item{an explicit sequence: a @tech{pattern} surrounded by @litchar{(} and @litchar{)}}]
 
 A @deftech{line comment} begins with either @litchar{#} or @litchar{;} and
@@ -931,7 +937,7 @@ bindings. The most important of these is @racket[parse]:
  @item{For terminals, the value of the token.}
  @item{For @tech{rule identifier}s: the associated parse value for the rule.}
  @item{For @tech{choice pattern}s: the associated parse value for one of the matching subpatterns.}
- @item{For @tech{quantifed pattern}s and @tech{optional pattern}s: the corresponding values, spliced into the structure.}
+ @item{For @tech{quantified pattern}s and @tech{optional pattern}s: the corresponding values, spliced into the structure.}
  ]
 
  Consequently, it's only the presence of @tech{rule identifier}s in a rule's
@@ -1090,44 +1096,45 @@ In addition to the exports shown below, the @racketmodname[brag/support] module 
 
 @defform[(:* re ...)]{
 
- Repetition of @racket[re] sequence 0 or more times.}
+0 or more occurrences of any @racket[re] pattern.}
 
 @defform[(:+ re ...)]{
 
- Repetition of @racket[re] sequence 1 or more times.}
+1 or more occurrences of any @racket[re] pattern.}
 
 @defform[(:? re ...)]{
 
- Zero or one occurrence of @racket[re] sequence.}
+0 or 1 occurrence of any @racket[re] pattern.}
 
 @defform[(:= n re ...)]{
 
- Exactly @racket[n] occurrences of @racket[re] sequence, where
- @racket[n] must be a literal exact, non-negative number.}
+Exactly @racket[n] occurrences of any @racket[re] pattern, where
+@racket[n] must be a literal exact, non-negative number.}
 
 @defform[(:>= n re ...)]{
 
- At least @racket[n] occurrences of @racket[re] sequence, where
- @racket[n] must be a literal exact, non-negative number.}
+At least @racket[n] occurrences of any @racket[re] pattern, where
+@racket[n] must be a literal exact, non-negative number.}
 
 @defform[(:** n m re ...)]{
 
- Between @racket[n] and @racket[m] (inclusive) occurrences of
- @racket[re] sequence, where @racket[n] must be a literal exact,
- non-negative number, and @racket[m] must be literally either
- @racket[#f], @racket[+inf.0], or an exact, non-negative number; a
- @racket[#f] value for @racket[m] is the same as @racket[+inf.0].}
+Between @racket[n] and @racket[m] (inclusive) occurrences of
+any @racket[re] pattern, where @racket[n] must be a literal exact,
+non-negative number, and @racket[m] must be literally either
+@racket[#f], @racket[+inf.0], or an exact, non-negative number; a
+@racket[#f] value for @racket[m] is the same as @racket[+inf.0].}
 
 @defform[(:or re ...)]{
 
- Same as @racket[(union re ...)].}
+Same as @racket[(:union re ...)].}
 
 @deftogether[(
-              @defform[(:: re ...)]
-               @defform[(:seq re ...)]
-               )]{
+@defform[(:: re ...)]
+@defform[(:seq re ...)]
+)]{
 
- Both forms concatenate the @racket[re]s.}
+Both forms concatenate the @racket[re]s into a single, indivisible pattern.
+In other words, this matches @emph{all} the @racket[re]s in order, whereas @racket[(:union re ...)] matches @emph{any} of the @racket[re]s.}
 
 @defform[(:& re ...)]{
 

@@ -1,7 +1,7 @@
 #lang racket/base
 (require brag/rules/stx-types
+         racket/list
          (for-syntax racket/base))
-
 (provide flatten-rule
          flatten-rules
          prim-rule)
@@ -68,67 +68,75 @@
       (values (apply append (reverse rules))
               (apply append (reverse patterns))))
           
-    (with-syntax ([head (if inferred? #'inferred-prim-rule #'prim-rule)]
-                  [origin (syntax-case a-rule (rule) [(rule name (pat-head rest ...)) #'pat-head])])
+    (with-syntax ([HEAD (if inferred? #'inferred-prim-rule #'prim-rule)]
+                  [ORIGIN (syntax-case a-rule (rule) [(rule name (pat-head rest ...)) #'pat-head])])
       (syntax-case a-rule (rule)
-        [(rule name pat)
-         (syntax-case #'pat (id inferred-id lit token choice repeat maybe seq)
+        [(rule NAME PAT)
+         (syntax-case #'PAT (id inferred-id lit token choice repeat maybe seq)
 
            ;; The primitive types stay as they are:
            [(id val)
-            (list #'(head origin name [pat]))]
+            (list #'(HEAD ORIGIN NAME [PAT]))]
            [(inferred-id val reason)
-            (list #'(head origin name [pat]))]
+            (list #'(HEAD ORIGIN NAME [PAT]))]
            [(lit val)
-            (list #'(head origin name [pat]))]
+            (list #'(HEAD ORIGIN NAME [PAT]))]
            [(token val)
-            (list #'(head origin name [pat]))]
+            (list #'(HEAD ORIGIN NAME [PAT]))]
 
            
            ;; Everything else might need lifting:
-           [(choice sub-pat ...)
+           [(choice SUB-PAT ...)
             (begin
               (define-values (inferred-ruless/rev new-sub-patss/rev)
                 (for/fold ([rs '()] [ps '()])
-                          ([p (syntax->list #'(sub-pat ...))])
+                          ([p (syntax->list #'(SUB-PAT ...))])
                   (let-values ([(new-r new-p)
                                 (lift-nonprimitive-pattern p)])
                     (values (cons new-r rs) (cons new-p ps)))))
-              (with-syntax ([((sub-pat ...) ...) (reverse new-sub-patss/rev)])
-                (append (list #'(head origin name [sub-pat ...] ...))
+              (with-syntax ([((SUB-PAT ...) ...) (reverse new-sub-patss/rev)])
+                (append (list #'(HEAD ORIGIN NAME [SUB-PAT ...] ...))
                         (apply append (reverse inferred-ruless/rev)))))]
 
-           [(repeat min sub-pat)
+           [(repeat MIN #f SUB-PAT)
+            ;; indefinite repeat
             (begin
               (define-values (inferred-rules new-sub-pats)
-                (lift-nonprimitive-pattern #'sub-pat))
-              (with-syntax ([(sub-pat ...) new-sub-pats])
-                (cons (cond [(= (syntax-e #'min) 0)
-                             #`(head origin name
-                                     [(inferred-id name repeat) sub-pat ...]
-                                     [])]
-                            [(= (syntax-e #'min) 1)
-                             #`(head origin name
-                                     [(inferred-id name repeat) sub-pat ...]
-                                     [sub-pat ...])])
+                (lift-nonprimitive-pattern #'SUB-PAT))
+              (with-syntax ([(SUB-PAT ...) new-sub-pats]
+                            [MIN-REPEAT-SUB-PATS (apply append (make-list (syntax-e #'MIN) new-sub-pats))])
+                (cons #`(HEAD ORIGIN NAME
+                              [(inferred-id NAME repeat) SUB-PAT ...]
+                              MIN-REPEAT-SUB-PATS)
                       inferred-rules)))]
+           
+           [(repeat MIN MAX SUB-PAT)
+            ;; finite repeat
+            (begin
+              (define min (syntax-e #'MIN))
+              (define max (syntax-e #'MAX))
+              (define new-rule-stx (with-syntax ([(MIN-SUBPAT ...) (make-list min #'SUB-PAT)]
+                                                 [(EXTRA-SUBPAT ...) (make-list (- max min) #'SUB-PAT)])
+                                     ;; has to keep the same name to work correctly
+                                     #'(rule NAME (seq MIN-SUBPAT ... (maybe EXTRA-SUBPAT) ...))))
+              (recur new-rule-stx #f))]
 
-           [(maybe sub-pat)
+           [(maybe SUB-PAT)
             (begin
               (define-values (inferred-rules new-sub-pats)
-                (lift-nonprimitive-pattern #'sub-pat))
-              (with-syntax ([(sub-pat ...) new-sub-pats])
-                (cons #'(head origin name
-                              [sub-pat ...]
+                (lift-nonprimitive-pattern #'SUB-PAT))
+              (with-syntax ([(SUB-PAT ...) new-sub-pats])
+                (cons #'(HEAD ORIGIN NAME
+                              [SUB-PAT ...]
                               [])
                       inferred-rules)))]
 
-           [(seq sub-pat ...)
+           [(seq SUB-PAT ...)
             (begin
               (define-values (inferred-rules new-sub-pats)
-                (lift-nonprimitive-patterns (syntax->list #'(sub-pat ...))))
-              (with-syntax ([(sub-pat ...) new-sub-pats])
-                (cons #'(head origin name [sub-pat ...])
+                (lift-nonprimitive-patterns (syntax->list #'(SUB-PAT ...))))
+              (with-syntax ([(SUB-PAT ...) new-sub-pats])
+                (cons #'(HEAD ORIGIN NAME [SUB-PAT ...])
                       inferred-rules)))])]))))
 
 
@@ -162,7 +170,7 @@
      #t]
     [(choice sub-pat ...)
      #f]
-    [(repeat min val)
+    [(repeat min max val)
      #f]
     [(maybe sub-pat)
      #f]

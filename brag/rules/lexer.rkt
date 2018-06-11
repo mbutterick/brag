@@ -13,8 +13,8 @@
 ;; A newline can be any one of the following.
 (define-lex-abbrev NL (:or "\r\n" "\r" "\n"))
 
-;; chars used for quantifiers & parse-tree filtering
-(define-for-syntax quantifiers "+:*") ; colon is reserved to separate rules and productions
+;; reserved-chars = chars used for quantifiers & parse-tree filtering
+(define-for-syntax quantifiers "+:*{}") ; colon is reserved to separate rules and productions
 (define-lex-trans reserved-chars
   (λ(stx) #`(char-set #,(format "~a~a~a" quantifiers hide-char splice-char))))
 
@@ -64,7 +64,8 @@
     (token-SPLICE lexeme)]
    ["|"
     (token-PIPE lexeme)]
-   [(:or "+" "*")
+   [(:or "+" "*"
+         (:: "{" (:* digit) (:? (:: "," (:* digit))) "}"))
     (token-REPEAT lexeme)]
    [whitespace
     ;; Skip whitespace
