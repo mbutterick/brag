@@ -1090,44 +1090,45 @@ In addition to the exports shown below, the @racketmodname[brag/support] module 
 
 @defform[(:* re ...)]{
 
- Repetition of @racket[re] sequence 0 or more times.}
+0 or more occurrences of any @racket[re] pattern.}
 
 @defform[(:+ re ...)]{
 
- Repetition of @racket[re] sequence 1 or more times.}
+1 or more occurrences of any @racket[re] pattern.}
 
 @defform[(:? re ...)]{
 
- Zero or one occurrence of @racket[re] sequence.}
+0 or 1 occurrence of any @racket[re] pattern.}
 
 @defform[(:= n re ...)]{
 
- Exactly @racket[n] occurrences of @racket[re] sequence, where
- @racket[n] must be a literal exact, non-negative number.}
+Exactly @racket[n] occurrences of any @racket[re] pattern, where
+@racket[n] must be a literal exact, non-negative number.}
 
 @defform[(:>= n re ...)]{
 
- At least @racket[n] occurrences of @racket[re] sequence, where
- @racket[n] must be a literal exact, non-negative number.}
+At least @racket[n] occurrences of any @racket[re] pattern, where
+@racket[n] must be a literal exact, non-negative number.}
 
 @defform[(:** n m re ...)]{
 
- Between @racket[n] and @racket[m] (inclusive) occurrences of
- @racket[re] sequence, where @racket[n] must be a literal exact,
- non-negative number, and @racket[m] must be literally either
- @racket[#f], @racket[+inf.0], or an exact, non-negative number; a
- @racket[#f] value for @racket[m] is the same as @racket[+inf.0].}
+Between @racket[n] and @racket[m] (inclusive) occurrences of
+any @racket[re] pattern, where @racket[n] must be a literal exact,
+non-negative number, and @racket[m] must be literally either
+@racket[#f], @racket[+inf.0], or an exact, non-negative number; a
+@racket[#f] value for @racket[m] is the same as @racket[+inf.0].}
 
 @defform[(:or re ...)]{
 
- Same as @racket[(union re ...)].}
+Same as @racket[(:union re ...)].}
 
 @deftogether[(
-              @defform[(:: re ...)]
-               @defform[(:seq re ...)]
-               )]{
+@defform[(:: re ...)]
+@defform[(:seq re ...)]
+)]{
 
- Both forms concatenate the @racket[re]s.}
+Both forms concatenate the @racket[re]s into a single, indivisible pattern.
+In other words, this matches @emph{all} the @racket[re]s in order, whereas @racket[(:union re ...)] matches @emph{any} of the @racket[re]s.}
 
 @defform[(:& re ...)]{
 
