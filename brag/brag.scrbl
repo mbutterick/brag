@@ -26,10 +26,16 @@
 
 
 
-@title{brag: the Beautiful Racket AST Generator}
+@title{brag: a better Racket AST generator}
 @author["Danny Yoo (95%)" "Matthew Butterick (5%)"]
 
 @defmodulelang[brag]
+
+
+@margin-note{This is a fork of the @link["https://docs.racket-lang.org/ragg"]{@racket[ragg]} package. It has a variety of bugfixes and new features. Some of these features have required new notation that's not necessarily compatible with all existing @racket[ragg] files. 
+
+Originally @racket[brag] was built to support the @link["https://docs.racket-lang.org/br"]{Beautiful Racket} project. But it has no dependencies on any Beautiful Racket libraries (and will remain thus). So it can be used independently.}
+
 
 @section{Quick start}
 
