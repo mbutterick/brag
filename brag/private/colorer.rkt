@@ -9,7 +9,7 @@
    ;; (for DrRacket selections etc)
    [whitespace (token 'WHITE lexeme)]
    [(:or (from/to "'" "'") (from/to "\"" "\"")) (token 'LIT lexeme)]
-   [(:or (char-set "()[]{}|+*:") hide-char splice-char) (token 'MISC lexeme)]
+   [(:or (char-set "()[]{}|+*:?") hide-char splice-char) (token 'MISC lexeme)]
    [(:seq (:or "#" ";") (complement (:seq (:* any-char) NL (:* any-char))) (:or NL "")) (token 'COMMENT lexeme)]
    [id (token 'ID lexeme)]
    [any-char (token 'OTHER lexeme)]))

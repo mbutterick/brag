@@ -698,9 +698,9 @@ A @deftech{pattern} is one of the following:
  
  @item{a @deftech{choice pattern}: a sequence of @tech{pattern}s delimited with @litchar{|} characters.}
 
- @item{a @deftech{quantified pattern}: a @tech{pattern} followed by either @litchar{*} (``zero or more'') or @litchar{+} (``one or more''). Quantification can also be denoted by integers within curly brackets. So @litchar|{{2}}| means ``exactly 2''; @litchar|{{2,5}}| means ``between 2 and 5, inclusive''; @litchar|{{2,}}| means ``2 or more''; and @litchar|{{,5}}| means ``up to 5''.}
+ @item{a @deftech{quantified pattern}: a @tech{pattern} followed by either @litchar{*} (``zero or more''), @litchar{?} (``zero or one''), or @litchar{+} (``one or more''). Quantification can also be denoted by integers within curly brackets. So @litchar|{{2}}| means ``exactly 2''; @litchar|{{2,5}}| means ``between 2 and 5, inclusive''; @litchar|{{2,}}| means ``2 or more''; and @litchar|{{,5}}| means ``up to 5''.}
  
- @item{an @deftech{optional pattern}: a @tech{pattern} surrounded by @litchar{[} and @litchar{]}}
+ @item{an @deftech{optional pattern}: a @tech{pattern} surrounded by @litchar{[} and @litchar{]}}. (The @litchar{?} zero-or-one quantifier means the same thing.)
  
  @item{an explicit sequence: a @tech{pattern} surrounded by @litchar{(} and @litchar{)}}]
 
