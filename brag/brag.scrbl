@@ -946,8 +946,8 @@ bindings. The most important of these is @racket[parse]:
  @item{For @tech{quantified pattern}s and @tech{optional pattern}s: the corresponding values, spliced into the structure.}
  ]
 
- Consequently, it's only the presence of @tech{rule identifier}s in a rule's
- pattern that informs the parser to introduces nested structure into the syntax
+Thus, it's only the presence of @tech{rule identifier}s in a rule's
+ pattern that tells the parser to introduce nested structure into the syntax
  object.
 
 
