@@ -38,7 +38,6 @@
          [struct-out pattern-token]
          [struct-out pattern-choice]
          [struct-out pattern-repeat]
-         [struct-out pattern-maybe]
          [struct-out pattern-seq])
 
 (define-tokens tokens (LPAREN
@@ -133,10 +132,12 @@
       (if (pattern-choice? $3)
           (pattern-choice (position->pos $1-start-pos)
                           (position->pos $3-end-pos)
-                          (cons $1 (pattern-choice-vals $3)))
+                          (cons $1 (pattern-choice-vals $3))
+                          #f)
           (pattern-choice (position->pos $1-start-pos)
                           (position->pos $3-end-pos)
-                          (list $1 $3)))]
+                          (list $1 $3)
+                          #f))]
      [(implicit-pattern-sequence)
       $1]]
     
@@ -145,10 +146,12 @@
       (if (pattern-seq? $2)
           (pattern-seq (position->pos $1-start-pos)
                        (position->pos $2-end-pos)
-                       (cons $1 (pattern-seq-vals $2)))
+                       (cons $1 (pattern-seq-vals $2))
+                       #f)
           (pattern-seq (position->pos $1-start-pos)
                        (position->pos $2-end-pos)
-                       (list $1 $2)))]
+                       (list $1 $2)
+                       #f))]
      [(repeatable-pattern)
       $1]]
     
@@ -162,17 +165,17 @@
                 [(regexp-match #px"^\\{(\\d+)?(,)?(\\d+)?\\}$" $2) ; "{min,max}" with both min & max optional
                  => (λ (m)
                       (match m
-                        [(list all min range? max) (let ()
-                                                     (define min (or (string->number min) 0))
-                                                     (define max (cond
-                                                                   [(and range? max) (string->number max)]
-                                                                   [(and (not range?) (not max)) min] ; {3} -> {3,3}
-                                                                   [else #f]))
+                        [(list all min range? max) (let* ([min (if min (string->number min) 0)]
+                                                          [max (cond
+                                                                 [(and range? max) (string->number max)]
+                                                                 [(and (not range?) (not max)) min] ; {3} -> {3,3}
+                                                                 [else #f])])
                                                      (cons min max))]))]
-                [else (raise-argument-error 'grammar-parse "unknown repetition operator ~e" $2)]))
+                [else (raise-argument-error 'grammar-parse "unknown repetition operator" $2)]))
         (pattern-repeat (position->pos $1-start-pos)
                         (position->pos $2-end-pos)
-                        min-repeat max-repeat $1))]
+                        min-repeat max-repeat $1
+                        #f))]
      [(atomic-pattern)
       $1]]
     
@@ -195,9 +198,10 @@
                       #f))]
      
      [(LBRACKET pattern RBRACKET)
-      (pattern-maybe (position->pos $1-start-pos)
-                     (position->pos $3-end-pos)
-                     $2)]
+      (pattern-repeat (position->pos $1-start-pos)
+                      (position->pos $3-end-pos)
+                      0 1 $2
+                      #f)]
      
      [(LPAREN pattern RPAREN)
       (relocate-pattern $2 (position->pos $1-start-pos) (position->pos $3-end-pos))]
@@ -229,14 +233,12 @@
      (pattern-token start-pos end-pos v (or hide? h))]
     [(pattern-lit _ _ v h)
      (pattern-lit start-pos end-pos v (or hide? h))]
-    [(pattern-choice _ _ vs)
-     (pattern-choice start-pos end-pos vs)]
-    [(pattern-repeat _ _ min max v)
-     (pattern-repeat start-pos end-pos min max v)]
-    [(pattern-maybe _ _ v)
-     (pattern-maybe start-pos end-pos v)]
-    [(pattern-seq _ _ vs)
-     (pattern-seq start-pos end-pos vs)]
+    [(pattern-choice _ _ vs h)
+     (pattern-choice start-pos end-pos vs (or hide? h))]
+    [(pattern-repeat _ _ min max v h)
+     (pattern-repeat start-pos end-pos min max v (or hide? h))]
+    [(pattern-seq _ _ vs h)
+     (pattern-seq start-pos end-pos vs (or hide? h))]
     [else
      (error 'relocate-pattern "Internal error when relocating ~s\n" a-pat)]))
 

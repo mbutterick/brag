@@ -47,42 +47,29 @@
                  `(rule ,id-stx ,pattern-stx)
                  (list source line column position span)))
 
+
 (define (pattern->stx source a-pattern)
-  (define recur (lambda (s) (pattern->stx source s)))
   
-  (define line (pos-line (pattern-start a-pattern)))
-  (define column (pos-col (pattern-start a-pattern)))
-  (define position (pos-offset (pattern-start a-pattern)))
-  (define span (if (and (number? (pos-offset (pattern-start a-pattern)))
-                        (number? (pos-offset (pattern-end a-pattern))))
-                   (- (pos-offset (pattern-end a-pattern))
-                      (pos-offset (pattern-start a-pattern)))
-                   #f))
-  (define source-location (list source line column position span))
-  (match a-pattern
-    [(struct pattern-id (start end val hide))
-     (syntax-property
-      (datum->syntax #f
-                     `(id ,(datum->syntax #f (string->symbol val) source-location))
-                     source-location)
-      'hide hide)]
-    [(struct pattern-lit (start end val hide))
-     (syntax-property
-      (datum->syntax #f
-                     `(lit ,(datum->syntax #f val source-location))
-                     source-location)
-      'hide hide)]
-    [(struct pattern-token (start end val hide))
-     (syntax-property
-      (datum->syntax #f
-                     `(token ,(datum->syntax #f (string->symbol val) source-location))
-                     source-location)
-      'hide hide)]
-    [(struct pattern-choice (start end vals))
-     (datum->syntax #f`(choice ,@(map recur vals)) source-location)]
-    [(struct pattern-repeat (start end min max val))
-     (datum->syntax #f`(repeat ,min ,max ,(recur val)) source-location)]
-    [(struct pattern-maybe (start end val))
-     (datum->syntax #f`(maybe ,(recur val)) source-location)]
-    [(struct pattern-seq (start end vals))
-     (datum->syntax #f`(seq ,@(map recur vals)) source-location)]))
+  (define (pat->srcloc source pat)
+    (match-define (pos offset line col) (pattern-start pat))
+    (define offset-end (pos-offset (pattern-end pat)))
+    (define span (and (number? offset) (number? offset-end) (- offset-end offset)))
+    (list source line col offset span))
+
+  (let loop ([a-pattern a-pattern] [hide-state #f]) 
+    (define (pat->stx val) (datum->syntax #f val (pat->srcloc source a-pattern))) 
+    (define-values (pat hide)
+      (match a-pattern
+        [(struct pattern-id (start end val hide)) (values `(id ,(pat->stx (string->symbol val))) hide)]
+        [(struct pattern-lit (start end val hide)) (values `(lit ,(pat->stx val)) hide)]
+        [(struct pattern-token (start end val hide)) (values `(token ,(pat->stx (string->symbol val))) hide)]
+        ;; propagate hide value of choice, repeat, and seq into subpatterns
+        ;; use `(or hide-state hide)` to capture parent value
+        [(struct pattern-choice (start end vals hide))
+         (values `(choice ,@(map (λ (val) (loop val (or hide-state hide))) vals)) hide)]
+        [(struct pattern-repeat (start end min max val hide))
+         (values `(repeat ,min ,max ,(loop val (or hide-state hide))) hide)]
+        [(struct pattern-seq (start end vals hide))
+         (values `(seq ,@(map (λ (val) (loop val (or hide-state hide))) vals)) hide)]))
+    
+    (syntax-property (pat->stx pat) 'hide (or hide-state hide))))

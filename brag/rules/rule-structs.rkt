@@ -28,17 +28,15 @@
 (struct pattern-lit pattern (val hide)
         #:transparent)
 
-(struct pattern-choice pattern (vals)
+(struct pattern-choice pattern (vals hide)
         #:transparent)
 
 (struct pattern-repeat pattern (min
                                 max
-                                val)
+                                val
+                                hide)
         #:transparent)
 
-(struct pattern-maybe pattern (val)
-        #:transparent)
-
-(struct pattern-seq pattern (vals)
+(struct pattern-seq pattern (vals hide)
         #:transparent)
 
