@@ -32,26 +32,31 @@
 (define-lex-abbrev id (:& (complement (:+ digit)) (:+ id-char)))
 (define-lex-abbrev id-separator (:or ":" "::="))
 
+(define-lex-abbrev esc-chars (char-set "\\a\\b\\t\\n\\v\\f\\r\\e"))
+
+(define (escape-lexeme lexeme quote-char)
+  ;; convert the literal string representation back into an escape char with lookup table
+  ;; maybe use `read` instead?
+  (define escapes (hash "a" 7 "b" 8 "t" 9 "n" 10 "v" 11 "f" 12 "r" 13 "e" 27 "\"" 34 "'" 39))
+  (define pat (regexp (format "(?<=^~a\\\\).(?=~a$)" quote-char quote-char)))
+  (cond
+    [(regexp-match pat lexeme)
+     => (λ (m) (string quote-char (integer->char (hash-ref escapes (car m))) quote-char))]
+    [else lexeme]))
+
+
 (define lex/1
   (lexer-src-pos
    ;; handle whitespace chars within quotes as literal tokens: "\n" "\t" '\n' '\t'
    ;; by matching the escaped version, and then unescaping them before they become token-LITs
    [(:: "'"
-        (:* (:or "\\'" "\\n" "\\t" (:~ "'" "\\")))
+        (:* (:or "\\'" esc-chars (:~ "'" "\\")))
         "'")
-    (token-LIT (case lexeme
-                 [("'\\''") "\"'\""]
-                 [("'\\n'") "'\n'"]
-                 [("'\\t'") "'\t'"]
-                 [else lexeme]))]
+    (token-LIT (escape-lexeme lexeme #\'))]
    [(:: "\""
-        (:* (:or "\\\"" "\\n" "\\t" (:~ "\"" "\\")))
+        (:* (:or "\\\"" esc-chars (:~ "\"" "\\")))
         "\"")
-    (token-LIT (case lexeme
-                 [("\"\\\"\"") "\"\"\""]
-                 [("\"\\n\"") "\"\n\""]
-                 [("\"\\t\"") "\"\t\""]
-                 [else lexeme]))]
+    (token-LIT (escape-lexeme lexeme #\"))]
    ["("
     (token-LPAREN lexeme)]
    ["["
