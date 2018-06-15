@@ -13,7 +13,7 @@
          "test-lexer.rkt"
          "test-old-token.rkt"
          "test-parser.rkt"
-         "test-quotation-marks.rkt"
+         "test-quotation-marks-and-backslashes.rkt"
          "test-simple-arithmetic-grammar.rkt"
          "test-simple-line-drawing.rkt"
          "test-weird-grammar.rkt"
