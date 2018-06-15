@@ -168,60 +168,62 @@
                         [(list all min range? max) (let* ([min (if min (string->number min) 0)]
                                                           [max (cond
                                                                  [(and range? max) (string->number max)]
-                                                                 [(and (not range?) (not max)) min] ; {3} -> {3,3}
-                                                                 [else #f])])
-                                                     (cons min max))]))]
-                [else (raise-argument-error 'grammar-parse "unknown repetition operator" $2)]))
-        (pattern-repeat (position->pos $1-start-pos)
-                        (position->pos $2-end-pos)
-                        min-repeat max-repeat $1
-                        #f))]
-     [(atomic-pattern)
-      $1]]
+                                                                 [(and (not range?) (not max)) (if (zero? min)
+                                                                                                   #f ; {} -> {0,}
+                                                                                                   min))] ; {3} -> {3,3}
+[else #f])])
+(cons min max))]))]
+[else (raise-argument-error 'grammar-parse "unknown repetition operator" $2)]))
+(pattern-repeat (position->pos $1-start-pos)
+                (position->pos $2-end-pos)
+                min-repeat max-repeat $1
+                #f))]
+[(atomic-pattern)
+ $1]]
     
-    [atomic-pattern
-     [(LIT)
-      (pattern-lit (position->pos $1-start-pos)
-                   (position->pos $1-end-pos)
-                   (substring $1 1 (sub1 (string-length $1)))
-                   #f)]
+[atomic-pattern
+ [(LIT)
+  (pattern-lit (position->pos $1-start-pos)
+               (position->pos $1-end-pos)
+               (substring $1 1 (sub1 (string-length $1)))
+               #f)]
      
-     [(ID)
-      (if (token-id? $1)
-          (pattern-token (position->pos $1-start-pos)
-                         (position->pos $1-end-pos)
-                         $1
-                         #f)
-          (pattern-id (position->pos $1-start-pos)
-                      (position->pos $1-end-pos)
-                      $1
-                      #f))]
+ [(ID)
+  (if (token-id? $1)
+      (pattern-token (position->pos $1-start-pos)
+                     (position->pos $1-end-pos)
+                     $1
+                     #f)
+      (pattern-id (position->pos $1-start-pos)
+                  (position->pos $1-end-pos)
+                  $1
+                  #f))]
      
-     [(LBRACKET pattern RBRACKET)
-      (pattern-repeat (position->pos $1-start-pos)
-                      (position->pos $3-end-pos)
-                      0 1 $2
-                      #f)]
+ [(LBRACKET pattern RBRACKET)
+  (pattern-repeat (position->pos $1-start-pos)
+                  (position->pos $3-end-pos)
+                  0 1 $2
+                  #f)]
      
-     [(LPAREN pattern RPAREN)
-      (relocate-pattern $2 (position->pos $1-start-pos) (position->pos $3-end-pos))]
+ [(LPAREN pattern RPAREN)
+  (relocate-pattern $2 (position->pos $1-start-pos) (position->pos $3-end-pos))]
      
-     [(HIDE atomic-pattern)
-      (relocate-pattern $2 (position->pos $1-start-pos) (position->pos $2-end-pos) 'hide)]
+ [(HIDE atomic-pattern)
+  (relocate-pattern $2 (position->pos $1-start-pos) (position->pos $2-end-pos) 'hide)]
 
-     [(SPLICE ID)
-      ;; only works for nonterminals on the right side
-      ;; (meaningless with terminals)
-      (if (token-id? $2)
-          (error 'brag "Can't use splice operator with terminal")
-          (pattern-id (position->pos $1-start-pos)
-                      (position->pos $2-end-pos)
-                      $2
-                      'splice))]])
+ [(SPLICE ID)
+  ;; only works for nonterminals on the right side
+  ;; (meaningless with terminals)
+  (if (token-id? $2)
+      (error 'brag "Can't use splice operator with terminal")
+      (pattern-id (position->pos $1-start-pos)
+                  (position->pos $2-end-pos)
+                  $2
+                  'splice))]])
    
    
-   (error (lambda (tok-ok? tok-name tok-value start-pos end-pos)
-            ((current-parser-error-handler) tok-ok? tok-name tok-value (position->pos start-pos) (position->pos end-pos))))))
+(error (lambda (tok-ok? tok-name tok-value start-pos end-pos)
+         ((current-parser-error-handler) tok-ok? tok-name tok-value (position->pos start-pos) (position->pos end-pos))))))
 
 ;; relocate-pattern: pattern -> pattern
 ;; Rewrites the pattern's start and end pos accordingly.
