@@ -21,3 +21,8 @@
 (check-equal? (parse-to-datum "dd") '(start (d-rule "d" "d")))
 (check-equal? (parse-to-datum "ddd") '(start (d-rule "d" "d" "d")))
 (check-exn exn:fail:parsing? (λ () (parse-to-datum "dddd")))
+
+(check-equal? (syntax->datum ((make-rule-parser e-rule) "")) '(e-rule)) ; to prevent ambiguity with b-rule while parsing empty string
+(check-equal? (parse-to-datum "e") '(start (e-rule "e")))
+(check-equal? (parse-to-datum "ee") '(start (e-rule "e" "e")))
+(check-equal? (parse-to-datum "eee") '(start (e-rule "e" "e" "e")))
