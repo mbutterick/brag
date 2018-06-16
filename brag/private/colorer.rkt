@@ -8,7 +8,9 @@
    ;; need to lex whitespace to keep srclocs accurate
    ;; (for DrRacket selections etc)
    [whitespace (token 'WHITE lexeme)]
-   [(:or (from/to "'" "'") (from/to "\"" "\"")) (token 'LIT lexeme)]
+   [(:or (:: "\"" "\\" "\"" "\"") ; string containg double-quote = "\""
+         (from/to "'" "'")
+         (from/to "\"" "\"")) (token 'LIT lexeme)]
    [(:or (char-set "()[]{}|+*:?") hide-char splice-char) (token 'MISC lexeme)]
    [(:seq (:or "#" ";") (complement (:seq (:* any-char) NL (:* any-char))) (:or NL "")) (token 'COMMENT lexeme)]
    [id (token 'ID lexeme)]
