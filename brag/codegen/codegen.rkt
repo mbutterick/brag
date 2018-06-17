@@ -18,8 +18,8 @@
 ;; FIXME: abstract this so we can just call (rules ...) without
 ;; generating the whole module body.
 (define (rules-codegen rules-stx 
-                       #:parser-provider-module [parser-provider-module 'br-parser-tools/yacc]
-                       #:parser-provider-form [parser-provider-form 'parser])
+                       #:parser-provider-module [parser-provider-module 'br-parser-tools/cfg-parser]
+                       #:parser-provider-form [parser-provider-form 'cfg-parser])
   (syntax-case rules-stx ()
     [(_) (raise-syntax-error 'brag
                              (format "The grammar does not appear to have any rules")
@@ -37,11 +37,11 @@
        (define rule-ids (map rule-id rules))
        
        (define token-types ;; (listof symbol)
-         (let-values ([(implicit-tokens    ;; (listof identifier)
-                        explicit-tokens)   ;; (listof identifier)
-                       (rules-collect-token-types rules)])
+         (let-values ([(implicit-tokens explicit-tokens) (rules-collect-token-types rules)])
            (remove-duplicates (append (map string->symbol (map syntax-e implicit-tokens))
                                       (map syntax-e explicit-tokens)) eq?)))
+
+       (define (rules-stx-id sym) (datum->syntax rules-stx sym))
        
        (with-syntax ([START-ID (first rule-ids)] ; The first rule, by default, is the start rule.
                      [(TOKEN-TYPE ...) token-types]
@@ -50,14 +50,14 @@
                      [GENERATED-GRAMMAR `(grammar ,@generated-rule-codes)]
                      [PARSER-MODULE parser-provider-module]
                      [PARSER-FORM parser-provider-form]
-                     [PARSE (syntax-local-introduce (or (syntax-property rules-stx 'parse) (error 'no-parse-id-prop)))]
-                     [PARSE-TO-DATUM (syntax-local-introduce (or (syntax-property rules-stx 'parse-to-datum) (error 'no-parse-to-datum-id-prop)))]
-                     [PARSE-TREE (syntax-local-introduce (or (syntax-property rules-stx 'parse-tree) (error 'no-parse-tree-id-prop)))]
-                     [MAKE-RULE-PARSER (syntax-local-introduce (or (syntax-property rules-stx 'make-rule-parser) (error 'no-make-rule-parser-id-prop)))]
-                     [ALL-TOKEN-TYPES (syntax-local-introduce (or (syntax-property rules-stx 'all-token-types) (error 'no-all-token-types-id-prop)))]
-                     [TOKEN (syntax-local-introduce (or (syntax-property rules-stx 'token) (error 'no-token-id-prop)))]
-                     [APPLY-LEXER (syntax-local-introduce (or (syntax-property rules-stx 'apply-lexer) (error 'no-apply-lexer-id-prop)))]
-                     [APPLY-TOKENIZER-MAKER (syntax-local-introduce (or (syntax-property rules-stx 'apply-tokenizer-maker) (error 'no-apply-tokenizer-maker-id-prop)))])
+                     [PARSE (rules-stx-id 'parse)]
+                     [PARSE-TO-DATUM (rules-stx-id 'parse-to-datum)]
+                     [PARSE-TREE (rules-stx-id 'parse-tree)]
+                     [MAKE-RULE-PARSER (rules-stx-id 'make-rule-parser)]
+                     [ALL-TOKEN-TYPES (rules-stx-id 'all-token-types)]
+                     [TOKEN (rules-stx-id 'token)]
+                     [APPLY-LEXER (rules-stx-id 'apply-lexer)]
+                     [APPLY-TOKENIZER-MAKER (rules-stx-id 'apply-tokenizer-maker)])
          ;; this stx object represents the top level of a #lang brag module.
          ;; so any `define`s are automatically available at the repl.
          ;; and only identifiers explicitly `provide`d are visible on import.

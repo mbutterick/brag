@@ -50,18 +50,9 @@ brag/codegen/sexp-based-lang
                                                             (- last-position first-position)
                                                             #f))))))
 
-
-;; Extension: we'd like to cooperate with DrRacket and tell
-;; it to use the default, textual lexer and color scheme when
-;; editing bf programs.
-;;
-;; See: http://docs.racket-lang.org/guide/language-get-info.html
-;; for more details, as well as the documentation in
-;; syntax/module-reader.
 (define (my-get-info key default default-filter)
   (case key
     [(color-lexer) (dynamic-require 'brag/private/colorer 'color-brag (λ () #f))]
     [(drracket:indentation) (dynamic-require 'brag/private/indenter 'indent-brag (λ () #f))]
-    [else
-     (default-filter key default)]))
+    [else (default-filter key default)]))
 
