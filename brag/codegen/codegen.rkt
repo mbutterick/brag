@@ -88,7 +88,13 @@
                      [PARSE-TO-DATUM (syntax-local-introduce (or (syntax-property rules-stx 'parse-to-datum) (error 'no-parse-to-datum-id-prop)))]
                      [PARSE-TREE (syntax-local-introduce (or (syntax-property rules-stx 'parse-tree) (error 'no-parse-tree-id-prop)))]
                      [MAKE-RULE-PARSER (syntax-local-introduce (or (syntax-property rules-stx 'make-rule-parser) (error 'no-make-rule-parser-id-prop)))]
-                     [ALL-TOKEN-TYPES (syntax-local-introduce (or (syntax-property rules-stx 'all-token-types) (error 'no-all-token-types-id-prop)))])
+                     [ALL-TOKEN-TYPES (syntax-local-introduce (or (syntax-property rules-stx 'all-token-types) (error 'no-all-token-types-id-prop)))]
+                     [TOKEN (syntax-local-introduce (or (syntax-property rules-stx 'token) (error 'no-token-id-prop)))]
+                     [APPLY-LEXER (syntax-local-introduce (or (syntax-property rules-stx 'apply-lexer) (error 'no-apply-lexer-id-prop)))]
+                     [APPLY-TOKENIZER-MAKER (syntax-local-introduce (or (syntax-property rules-stx 'apply-tokenizer-maker) (error 'no-apply-tokenizer-maker-id-prop)))])
+         ;; this stx object represents the top level of a #lang brag module.
+         ;; so any `define`s are automatically available at the repl.
+         ;; and only identifiers explicitly `provide`d are visible on import.
          (quasisyntax/loc rules-stx
            (begin             
              (require br-parser-tools/lex
@@ -109,6 +115,11 @@
                       #;current-tokenizer-error-handler
                       #;[struct-out exn:fail:parsing]
                       )
+             
+             ;; helpers from brag/support
+             (define TOKEN token)
+             (define APPLY-LEXER apply-lexer)
+             (define APPLY-TOKENIZER-MAKER apply-tokenizer-maker)
              
              (define-tokens enumerated-tokens (token-type ...))
              

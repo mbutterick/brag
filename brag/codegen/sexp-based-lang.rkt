@@ -96,11 +96,9 @@
   (syntax-case module-stx ()
     [(_ RULES-STX)
      (with-syntax ([RULES-STX (for/fold ([stx #'RULES-STX])
-                                        ([sym (in-list '(parse parse-to-datum parse-tree make-rule-parser all-token-types))])
+                                        ([sym (in-list '(parse parse-to-datum parse-tree make-rule-parser all-token-types token apply-lexer apply-tokenizer-maker))])
                                 (syntax-property stx sym (syntax-local-introduce (replace-context module-stx (datum->syntax #f sym)))))])
-       #'(#%module-begin
-          (provide (all-defined-out))
-          RULES-STX))]))
+       #'(#%module-begin RULES-STX))]))
 
 
 (define-syntax (rules rules-stx)
