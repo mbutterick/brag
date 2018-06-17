@@ -21,14 +21,11 @@
                        #:parser-provider-module [parser-provider-module 'br-parser-tools/yacc]
                        #:parser-provider-form [parser-provider-form 'parser])
   (syntax-case rules-stx ()
-    [(_)
-     (raise-syntax-error 'brag
-                         (format "The grammar does not appear to have any rules")
-                         rules-stx)]
-    [(_ RULE ...)
-     (begin
-       ;; (listof stx)
-       (define rules (syntax->list #'(RULE ...)))
+    [(_) (raise-syntax-error 'brag
+                             (format "The grammar does not appear to have any rules")
+                             rules-stx)]
+    [(_ . RULES)
+     (let ([rules (syntax->list #'RULES)]) ;; (listof stx)
        
        (check-all-rules-defined! rules)
        (check-all-rules-no-duplicates! rules)
@@ -39,33 +36,20 @@
        (define generated-rule-codes (map flat-rule->yacc-rule (flatten-rules rules)))
        (define rule-ids (map rule-id rules))
        
-       (define-values (implicit-tokens    ;; (listof identifier)
-                       explicit-tokens)   ;; (listof identifier)
-         (rules-collect-token-types rules))
+       (define token-types ;; (listof symbol)
+         (let-values ([(implicit-tokens    ;; (listof identifier)
+                        explicit-tokens)   ;; (listof identifier)
+                       (rules-collect-token-types rules)])
+           (remove-duplicates (append (map string->symbol (map syntax-e implicit-tokens))
+                                      (map syntax-e explicit-tokens)) eq?)))
        
-       ;; (listof symbol)
-       (define implicit-token-types
-         (map string->symbol (remove-duplicates (map syntax-e implicit-tokens))))
-       
-       ;; (listof symbol)
-       (define explicit-token-types (remove-duplicates (map syntax-e explicit-tokens)))
-       
-       ;; (listof symbol)
-       (define token-types
-         (remove-duplicates (append implicit-token-types explicit-token-types)))
-       
-       (with-syntax ([start-id (first rule-ids)] ; The first rule, by default, is the start rule.
-                     [(token-type ...) token-types]
-                     [(token-type-constructor ...) (for/list ([tt (in-list token-types)])
+       (with-syntax ([START-ID (first rule-ids)] ; The first rule, by default, is the start rule.
+                     [(TOKEN-TYPE ...) token-types]
+                     [(TOKEN-TYPE-CONSTRUCTOR ...) (for/list ([tt (in-list token-types)])
                                                      (string->symbol (format "token-~a" tt)))]
-                     [(explicit-token-types ...) explicit-token-types]
-                     [(implicit-token-types ...) implicit-token-types]
-                     [(implicit-token-types-str ...) (map symbol->string implicit-token-types)]
-                     [(implicit-token-type-constructor ...) (for/list ([itt (in-list implicit-token-types)])
-                                                              (string->symbol (format "token-~a" itt)))]
-                     [generated-grammar `(grammar ,@generated-rule-codes)]
-                     [parser-module parser-provider-module]
-                     [parser-form parser-provider-form]
+                     [GENERATED-GRAMMAR `(grammar ,@generated-rule-codes)]
+                     [PARSER-MODULE parser-provider-module]
+                     [PARSER-FORM parser-provider-form]
                      [PARSE (syntax-local-introduce (or (syntax-property rules-stx 'parse) (error 'no-parse-id-prop)))]
                      [PARSE-TO-DATUM (syntax-local-introduce (or (syntax-property rules-stx 'parse-to-datum) (error 'no-parse-to-datum-id-prop)))]
                      [PARSE-TREE (syntax-local-introduce (or (syntax-property rules-stx 'parse-tree) (error 'no-parse-tree-id-prop)))]
@@ -80,7 +64,7 @@
          (quasisyntax/loc rules-stx
            (begin             
              (require br-parser-tools/lex
-                      parser-module
+                      PARSER-MODULE
                       brag/codegen/runtime
                       brag/support
                       brag/private/internal-support
@@ -98,50 +82,49 @@
              (define APPLY-LEXER apply-lexer)
              (define APPLY-TOKENIZER-MAKER apply-tokenizer-maker)
              
-             (define-tokens enumerated-tokens (token-type ...))
+             (define-tokens enumerated-tokens (TOKEN-TYPE ...))
              
              ;; all-token-types lists all the tokens (except for EOF)
-             (define ALL-TOKEN-TYPES (set-remove (set 'token-type ...) 'EOF))
+             (define ALL-TOKEN-TYPES (set-remove (set 'TOKEN-TYPE ...) 'EOF))
              
              ;; For internal use by the permissive tokenizer only:
              (define all-tokens-hash/mutable
                (make-hash (list ;; Note: we also allow the eof object here, to make
                            ;; the permissive tokenizer even nicer to work with.
                            (cons eof token-EOF) 
-                           (cons 'token-type token-type-constructor) ...)))
+                           (cons 'TOKEN-TYPE TOKEN-TYPE-CONSTRUCTOR) ...)))
              
              (define-syntax (MAKE-RULE-PARSER rule-id-stx)
                (syntax-case rule-id-stx ()
                  [(_ start-rule)
                   (and (identifier? #'start-rule)
                        (member (syntax-e #'start-rule) '#,(map syntax-e rule-ids)))
-                  (let ()
-                    ;; HACK HACK HACK
-                    ;; The cfg-parser depends on the start-rule provided in (start ...) to have the same
-                    ;; context as the rest of this body, so I need to hack this.  I don't like this, but
-                    ;; I don't know what else to do.  Hence recolored-start-rule.
-                    (with-syntax ([RECOLORED-START-RULE (datum->syntax #'#,rules-stx (syntax-e #'start-rule))])
-                      #'(let ([THE-GRAMMAR (parser-form (tokens enumerated-tokens)
-                                                        (src-pos)
-                                                        (start RECOLORED-START-RULE)
-                                                        (end EOF)
-                                                        (error THE-ERROR-HANDLER)
-                                                        generated-grammar)])
-                          (procedure-rename
-                           (case-lambda [(tokenizer)
-                                         (define next-token
-                                           (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                         (THE-GRAMMAR next-token)]
-                                        [(source tokenizer)
-                                         (parameterize ([current-source source])
-                                           (PARSE tokenizer))])
-                           (string->symbol (format "~a-rule-parser" 'start-rule))))))]
-                 [(_ start-rule)
+                  ;; HACK HACK HACK
+                  ;; The cfg-parser depends on the start-rule provided in (start ...) to have the same
+                  ;; context as the rest of this body, so I need to hack this.  I don't like this, but
+                  ;; I don't know what else to do.  Hence recolored-start-rule.
+                  (with-syntax ([RECOLORED-START-RULE (datum->syntax #'#,rules-stx (syntax-e #'start-rule))])
+                    #'(let ([THE-GRAMMAR (PARSER-FORM (tokens enumerated-tokens)
+                                                      (src-pos)
+                                                      (start RECOLORED-START-RULE)
+                                                      (end EOF)
+                                                      (error THE-ERROR-HANDLER)
+                                                      GENERATED-GRAMMAR)])
+                        (procedure-rename
+                         (case-lambda [(tokenizer)
+                                       (define next-token
+                                         (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
+                                       (THE-GRAMMAR next-token)]
+                                      [(source tokenizer)
+                                       (parameterize ([current-source source])
+                                         (PARSE tokenizer))])
+                         (string->symbol (format "~a-rule-parser" 'start-rule)))))]
+                 [(_ not-a-rule-id)
                   (raise-syntax-error #f
-                                      (format "Rule ~a is not defined in the grammar" (syntax-e #'start-rule))
+                                      (format "Rule ~a is not defined in the grammar" (syntax-e #'not-a-rule-id))
                                       rule-id-stx)]))
              
-             (define PARSE (procedure-rename (MAKE-RULE-PARSER start-id) 'PARSE))
+             (define PARSE (procedure-rename (MAKE-RULE-PARSER START-ID) 'PARSE))
              
              (define (PARSE-TO-DATUM x)
                (let loop ([x (syntax->datum (PARSE x))])
@@ -162,7 +145,7 @@
 (define (flat-rule->yacc-rule a-flat-rule)
   (syntax-case a-flat-rule ()
     [(rule-type origin name . clauses)
-     (with-syntax ([translated-clauses (for/list ([clause-stx (syntax->list #'clauses)])
+     (with-syntax ([translated-clauses (for/list ([clause-stx (in-list (syntax->list #'clauses))])
                                          (translate-clause clause-stx #'name #'origin))])
        #'[name . translated-clauses])]))
 
@@ -190,20 +173,17 @@
   
   (define translated-actions
     (for/list ([translated-pattern (in-list translated-patterns)]
-               [primitive-pattern (syntax->list a-clause)]
+               [primitive-pattern (in-list (syntax->list a-clause))]
                [pos (in-naturals 1)])
       (if (eq? (syntax-property primitive-pattern 'hide) 'hide)
           #'null
-          (with-syntax ([$X 
-                         (format-id translated-pattern "$~a" pos)]
-                        [$X-start-pos 
-                         (format-id translated-pattern "$~a-start-pos" pos)]
-                        [$X-end-pos
-                         (format-id translated-pattern "$~a-end-pos" pos)])
+          (with-syntax ([$X (format-id translated-pattern "$~a" pos)]
+                        [$X-start-pos (format-id translated-pattern "$~a-start-pos" pos)]
+                        [$X-end-pos (format-id translated-pattern "$~a-end-pos" pos)])
             (syntax-case primitive-pattern (id lit token inferred-id)
                       
               ;; When a rule usage is inferred, the value of $X is a syntax object
-              ;; whose head is the name of the inferred rule . We strip that out,
+              ;; whose head is the name of the inferred rule. We strip that out,
               ;; leaving the residue to be absorbed.
               [(inferred-id val reason)
                #'(syntax-case $X ()
@@ -249,42 +229,36 @@
   (define-values (implicit explicit)
     (for/fold ([implicit null]
                [explicit (list (datum->syntax (first rules) 'EOF))])
-              ([r (in-list rules)])
-      (rule-collect-token-types r implicit explicit)))
+              ([a-rule (in-list rules)])
+      (syntax-case a-rule (rule)
+        [(rule _ a-pattern)
+         (let loop ([a-pattern #'a-pattern]
+                    [implicit implicit]
+                    [explicit explicit])
+           (syntax-case a-pattern (id lit token choice repeat maybe seq EOF)
+             [(id val)
+              (values implicit explicit)]
+             [(lit val)
+              (values (cons #'val implicit) explicit)]
+             [(token EOF)
+              (raise-syntax-error #f "Token EOF is reserved and can not be used in a grammar" #'val)]
+             [(token val)
+              (values implicit (cons #'val explicit))]
+             [(choice . vals)
+              (for/fold ([implicit implicit]
+                         [explicit explicit])
+                        ([v (in-list (syntax->list #'vals))])
+                (loop v implicit explicit))]
+             [(repeat min max val)
+              (loop #'val implicit explicit)]
+             [(maybe val)
+              (loop #'val implicit explicit)]
+             [(seq . vals)
+              (for/fold ([implicit implicit]
+                         [explicit explicit])
+                        ([v (in-list (syntax->list #'vals))])
+                (loop v implicit explicit))]))])))
   (values (reverse implicit) (reverse explicit)))
-
-(define (rule-collect-token-types a-rule implicit explicit)
-  (syntax-case a-rule (rule)
-    [(rule id a-pattern)
-     (pattern-collect-implicit-token-types #'a-pattern implicit explicit)]))
-
-(define (pattern-collect-implicit-token-types a-pattern implicit explicit)
-  (let loop ([a-pattern a-pattern]
-             [implicit implicit]
-             [explicit explicit])
-    (syntax-case a-pattern (id lit token choice repeat maybe seq EOF)
-      [(id val)
-       (values implicit explicit)]
-      [(lit val)
-       (values (cons #'val implicit) explicit)]
-      [(token EOF)
-       (raise-syntax-error #f "Token EOF is reserved and can not be used in a grammar" #'val)]
-      [(token val)
-       (values implicit (cons #'val explicit))]
-      [(choice vals ...)
-       (for/fold ([implicit implicit]
-                  [explicit explicit])
-                 ([v (in-list (syntax->list #'(vals ...)))])
-         (loop v implicit explicit))]
-      [(repeat min max val)
-       (loop #'val implicit explicit)]
-      [(maybe val)
-       (loop #'val implicit explicit)]
-      [(seq vals ...)
-       (for/fold ([implicit implicit]
-                  [explicit explicit])
-                 ([v (in-list (syntax->list #'(vals ...)))])
-         (loop v implicit explicit))])))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -336,7 +310,7 @@
 (define (rule-collect-used-ids a-rule)
   (syntax-case a-rule (rule)
     [(rule id a-pattern)
-     (pattern-collect-used-ids #'a-pattern '())]))
+     (pattern-collect-used-ids #'a-pattern null)]))
 
 ;; pattern-collect-used-ids: pattern-stx (listof identifier) -> (listof identifier)
 ;; Returns a flat list of rule identifiers referenced in the pattern.
@@ -350,17 +324,17 @@
        acc]
       [(token val)
        acc]
-      [(choice vals ...)
+      [(choice . vals)
        (for/fold ([acc acc])
-                 ([v (in-list (syntax->list #'(vals ...)))])
+                 ([v (in-list (syntax->list #'vals))])
          (loop v acc))]
       [(repeat min max val)
        (loop #'val acc)]
       [(maybe val)
        (loop #'val acc)]
-      [(seq vals ...)
+      [(seq . vals)
        (for/fold ([acc acc])
-                 ([v (in-list (syntax->list #'(vals ...)))])
+                 ([v (in-list (syntax->list #'vals))])
          (loop v acc))])))
 
 
@@ -373,11 +347,10 @@
 ;;
 ;; NOTE: Assumes all referenced rules have definitions.
 (define (check-all-rules-satisfiable! rules)
-  (define toplevel-rule-table (make-free-id-table))
-  (for ([a-rule (in-list rules)])
-    (free-id-table-set! toplevel-rule-table 
-                        (rule-id a-rule) 
-                        (sat:make-and)))
+  (define toplevel-rule-table
+    (make-free-id-table (for/list ([a-rule (in-list rules)])
+                          (cons (rule-id a-rule) (sat:make-and)))))
+  
   (define leaves null)
   
   (define (make-leaf)
@@ -393,38 +366,33 @@
        (make-leaf)]
       [(token val)
        (make-leaf)]
-      [(choice vals ...)
-       (begin
-         (define an-or-node (sat:make-or))
-         (for ([v (in-list (syntax->list #'(vals ...)))])
-           (define a-child (process-pattern v))
+      [(choice . vals)
+       (let ([an-or-node (sat:make-or)])
+         (for* ([v (in-list (syntax->list #'vals))]
+                [a-child (in-value (process-pattern v))])
            (sat:add-child! an-or-node a-child))
          an-or-node)]
       [(repeat min max val)
        (syntax-case #'min ()
-         [0
-          (make-leaf)]
-         [else
-          (process-pattern #'val)])]
-      [(maybe val)
-       (make-leaf)]
-      [(seq vals ...)
-       (begin
-         (define an-and-node (sat:make-and))
-         (for ([v (in-list (syntax->list #'(vals ...)))])
-           (define a-child (process-pattern v))
+         [0 (make-leaf)]
+         [_ (process-pattern #'val)])]
+      [(maybe val) (make-leaf)]
+      [(seq . vals)
+       (let ([an-and-node (sat:make-and)])
+         (for* ([v (in-list (syntax->list #'vals))]
+                [a-child (in-value (process-pattern v))])
            (sat:add-child! an-and-node a-child))
          an-and-node)]))
   
-  (for ([a-rule (in-list rules)])
-    (define rule-node (free-id-table-ref toplevel-rule-table (rule-id a-rule)))
+  (for* ([a-rule (in-list rules)]
+         [rule-node (in-value (free-id-table-ref toplevel-rule-table (rule-id a-rule)))])
     (sat:add-child! rule-node (process-pattern (rule-pattern a-rule))))
   
-  (for ([a-leaf leaves])
-    (sat:visit! a-leaf))
+  (for-each sat:visit! leaves)
   
-  (for ([a-rule (in-list rules)])
-    (define rule-node (free-id-table-ref toplevel-rule-table (rule-id a-rule)))
-    (unless (sat:node-yes? rule-node)
-      (raise-syntax-error #f (format "Rule ~a has no finite derivation" (syntax-e (rule-id a-rule)))
-                          (rule-id a-rule)))))
+  (for* ([a-rule (in-list rules)]
+         [rule-node (in-value (free-id-table-ref toplevel-rule-table (rule-id a-rule)))]
+         #:unless (sat:node-yes? rule-node))
+    (raise-syntax-error #f
+                        (format "Rule ~a has no finite derivation" (syntax-e (rule-id a-rule)))
+                        (rule-id a-rule))))
