@@ -17,7 +17,7 @@
 (define-for-syntax (rules->token-types rules)
   (let-values ([(implicit-tokens explicit-tokens) (rules-collect-token-types rules)])
     (remove-duplicates (append (for/list ([it (in-list implicit-tokens)])
-                                 (string->symbol (syntax-e it)))
+                                         (string->symbol (syntax-e it)))
                                (map syntax-e explicit-tokens)) eq?)))
 
 (define-syntax (brag-module-begin rules-stx)
@@ -37,7 +37,7 @@
        (with-syntax ([START-ID (first rule-ids)] ; The first rule, by default, is the start rule.
                      [((TOKEN-TYPE . TOKEN-TYPE-CONSTRUCTOR) ...)
                       (for/list ([tt (in-list (rules->token-types rules))])
-                        (cons tt (string->symbol (format "token-~a" tt))))]
+                                (cons tt (string->symbol (format "token-~a" tt))))]
                      ;; Flatten rules to use the yacc-style ruleset that br-parser-tools supports       
                      [GENERATED-RULE-CODES (map flat-rule->yacc-rule (flatten-rules rules))]
                      ;; main exports. Break hygiene so they're also available at top-level / repl
@@ -101,11 +101,7 @@
             ;; start-id has to be a value, not an expr, because make-rule-parser is a macro
             (define PARSE (procedure-rename (MAKE-RULE-PARSER START-ID) 'PARSE))
              
-            (define (PARSE-TO-DATUM x)
-              (let loop ([x (syntax->datum (PARSE x))])
-                (cond
-                  [(list? x) (map loop x)]
-                  [else x])))
+            (define (PARSE-TO-DATUM x) (syntax->datum (PARSE x)))
 
             (define PARSE-TREE PARSE-TO-DATUM))))]))
 
