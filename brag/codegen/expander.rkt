@@ -54,7 +54,8 @@
             (provide PARSE PARSE-TO-DATUM PARSE-TREE MAKE-RULE-PARSER ALL-TOKEN-TYPES)
 
             ;; handle brag/support `token` with special identifier
-            ;; so it doesn't conflict with brag's internal `token` macro 
+            ;; so it doesn't conflict with brag's internal `token` macro
+            ;; defined but deliberately not provided so it's available at repl, but not on import
             (define TOKEN bs:token)
              
             (define-tokens enumerated-tokens (TOKEN-TYPE ...))
