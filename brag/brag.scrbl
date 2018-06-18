@@ -708,7 +708,7 @@ A @deftech{pattern} is one of the following:
  
  @item{an explicit @deftech{sequence}: a @tech{pattern} surrounded by @litchar{(} and @litchar{)}.}
 
- @item{the @deftech{empty set}: a special @tech{pattern} that matches a list of zero tokens. When it appears on the right side of a rule, the empty set will match empty input (which obviously contains zero tokens), but also the ``gap'' between two existing tokens (which less obviously also contains zero tokens). The empty set can be denoted by @litchar{[]} (empty square brackets), @litchar{∅} (the Unicode empty-set character), or @litchar{Ø} (the slashed O).}
+ @item{the @deftech{empty set}: a special @tech{pattern} that matches a list of zero tokens. When it appears on the right side of a rule, the empty set will match empty input (which obviously contains zero tokens), but also the ``gap'' between two existing tokens (which less obviously also contains zero tokens). The empty set can be denoted by @litchar{()} (empty parentheses), @litchar{∅} (the Unicode empty-set character), or @litchar{Ø} (the slashed O).}
  ]
 
 
