@@ -24,6 +24,7 @@
          token-ID
          token-LIT
          token-EOF
+         token-EMPTY
          grammar-parser
          
          current-source
@@ -53,7 +54,8 @@
                        RULE_HEAD_SPLICED
                        ID
                        LIT
-                       EOF))
+                       EOF
+                       EMPTY))
 
 (define hide-char #\/)
 (define splice-char #\@)
@@ -198,6 +200,14 @@
                       (position->pos $1-end-pos)
                       $1
                       #f))]
+
+     [(EMPTY)
+      (pattern-repeat (position->pos $1-start-pos)
+                      (position->pos $1-end-pos)
+                      0 0 (pattern-lit (position->pos $1-start-pos)
+                                       (position->pos $1-end-pos)
+                                       "" #f)
+                      #f)]
      
      [(LBRACKET pattern RBRACKET)
       (pattern-repeat (position->pos $1-start-pos)

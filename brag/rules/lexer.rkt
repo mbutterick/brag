@@ -56,6 +56,7 @@
         (:or (:* (:or "\\\"" esc-chars (:~ "\"" "\\"))) "\\\\")
         "\"")
     (token-LIT (unescape-lexeme lexeme #\"))]
+   [(:or "[]" "Ø" "∅") (token-EMPTY lexeme)]
    ["("
     (token-LPAREN lexeme)]
    ["["

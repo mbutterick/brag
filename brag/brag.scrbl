@@ -673,6 +673,9 @@ A @deftech{rule identifier} is an @tech{identifier} that is not in upper case.
 
 A @deftech{symbolic token identifier} is an @tech{identifier} that is in upper case.
 
+A @deftech{line comment} begins with either @litchar{#} or @litchar{;} and
+continues till the end of the line.
+
 An @deftech{identifier} is a sequence of letters, numbers, or
 characters in the set @racket["-.!$%&/<=>?^_~@"]. It must not contain
 @litchar{*}, @litchar{+}, or @litchar|{{}| and @litchar|{}}|, as those characters are used to denote quantification.
@@ -680,7 +683,8 @@ characters in the set @racket["-.!$%&/<=>?^_~@"]. It must not contain
 
 A @deftech{pattern} is one of the following:
 @itemize[
- @item{an implicit sequence of @tech{pattern}s separated by whitespace}
+ @item{an implicit sequence of @tech{pattern}s separated by whitespace.}
+
  @item{a @deftech{terminal}: either a literal string or a @tech{symbolic token identifier}. 
 
   When used in a pattern, both kinds of terminals will match the same set of inputs. 
@@ -694,7 +698,7 @@ A @deftech{pattern} is one of the following:
   You @bold{cannot} use the literal string @racket["error"] as a terminal in a grammar, because it's reserved for @tt{brag}. You can, however, adjust your lexer to package it inside a token structure — say, @racket[(token 'ERROR "error")] — and then use the symbolic token identifier @racket[ERROR] in the grammar to match this token structure.
 }
 
- @item{a @tech{rule identifier}}
+ @item{a @tech{rule identifier}.}
  
  @item{a @deftech{choice pattern}: a sequence of @tech{pattern}s delimited with @litchar{|} characters.}
 
@@ -702,10 +706,10 @@ A @deftech{pattern} is one of the following:
  
  @item{an @deftech{optional pattern}: a @tech{pattern} surrounded by @litchar{[} and @litchar{]}. (The @litchar{?} zero-or-one quantifier means the same thing.)}
  
- @item{an explicit sequence: a @tech{pattern} surrounded by @litchar{(} and @litchar{)}}]
+ @item{an explicit @deftech{sequence}: a @tech{pattern} surrounded by @litchar{(} and @litchar{)}.}
 
-A @deftech{line comment} begins with either @litchar{#} or @litchar{;} and
-continues till the end of the line.
+ @item{the @deftech{empty set}: a special @tech{pattern} that matches a list of zero tokens. When it appears on the right side of a rule, the empty set will match empty input (which obviously contains zero tokens), but also the ``gap'' between two existing tokens (which less obviously also contains zero tokens). The empty set can be denoted by @litchar{[]} (empty square brackets), @litchar{∅} (the Unicode empty-set character), or @litchar{Ø} (the slashed O).}
+ ]
 
 
 For example, in the following program:

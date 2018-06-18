@@ -7,6 +7,7 @@
          "test-baby-json-hider.rkt"
          "test-curly-quantifier.rkt"
          "test-cutter.rkt"
+         "test-empty-symbol.rkt"
          "test-errors.rkt"
          "test-flatten.rkt"
          "test-lexer.rkt"
