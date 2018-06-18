@@ -15,10 +15,10 @@
 
 ;; -> (listof symbol)
 (define-for-syntax (rules->token-types rules)
-  (let-values ([(implicit-tokens explicit-tokens) (rules-collect-token-types rules)])
-    (remove-duplicates (append (for/list ([it (in-list implicit-tokens)])
-                                         (string->symbol (syntax-e it)))
-                               (map syntax-e explicit-tokens)) eq?)))
+  (define-values (implicit-tokens explicit-tokens) (rules-collect-token-types rules))
+  (remove-duplicates (append (for/list ([it (in-list implicit-tokens)])
+                                       (string->symbol (syntax-e it)))
+                             (map syntax-e explicit-tokens)) eq?))
 
 (define-syntax (brag-module-begin rules-stx)
   (syntax-case rules-stx ()

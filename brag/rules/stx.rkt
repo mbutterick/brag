@@ -5,15 +5,7 @@
          racket/match
          syntax/strip-context)
 
-(provide rules->stx)
-
-;; Given a sequence of rules, we translate these to syntax objects.
-
-;; rules->stx: (listof rule) -> syntax
-(define (rules->stx source rules #:original-stx [original-stx #f])
-  (datum->syntax #f (for/list ([stx (in-list rules)])
-                      (rule->stx source stx)) original-stx))
-
+(provide rule->stx)
 
 (define (rule->stx source a-rule)
   (define id-stx
