@@ -11,12 +11,8 @@
 
 ;; rules->stx: (listof rule) -> syntax
 (define (rules->stx source rules #:original-stx [original-stx #f])
-  (define rule-stxs
-    (map (lambda (stx) (rule->stx source stx))
-         rules))
-  (datum->syntax #f
-                 `(rules ,@rule-stxs)
-                 original-stx))
+  (datum->syntax #f (for/list ([stx (in-list rules)])
+                      (rule->stx source stx)) original-stx))
 
 
 (define (rule->stx source a-rule)

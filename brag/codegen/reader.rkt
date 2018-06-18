@@ -1,5 +1,5 @@
 #lang s-exp syntax/module-reader
-brag/codegen/sexp-based-lang
+brag/codegen/expander
 #:read my-read
 #:read-syntax my-read-syntax
 #:info my-get-info
@@ -39,7 +39,7 @@ brag/codegen/sexp-based-lang
                                                 #f)))))])
       (grammar-parser tokenizer)))
   (define-values (last-line last-column last-position) (port-next-location in))
-  (list (rules->stx src rules 
+  (rules->stx src rules 
                     #:original-stx (datum->syntax #f 'original-stx
                                                   (list src 
                                                         first-line 
@@ -48,7 +48,7 @@ brag/codegen/sexp-based-lang
                                                         (if (and (number? last-position)
                                                                  (number? first-position))
                                                             (- last-position first-position)
-                                                            #f))))))
+                                                            #f)))))
 
 (define (my-get-info key default default-filter)
   (case key

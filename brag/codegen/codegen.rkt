@@ -1,139 +1,16 @@
 #lang racket/base
-
-(require (for-template racket/base)
-         racket/list
+(require racket/list
          racket/syntax
-         syntax/srcloc
          brag/rules/stx-types
-         "flatten.rkt"
          syntax/id-table
          (prefix-in sat: "satisfaction.rkt")
-         (prefix-in support: brag/support)
-         (prefix-in stxparse: syntax/parse))
+         (for-template racket/base
+                       brag/codegen/runtime
+                       brag/private/internal-support))
 
-(provide rules-codegen)
-
-
-;; Generates the body of the module.
-;; FIXME: abstract this so we can just call (rules ...) without
-;; generating the whole module body.
-(define (rules-codegen rules-stx 
-                       #:parser-provider-module [parser-provider-module 'br-parser-tools/cfg-parser]
-                       #:parser-provider-form [parser-provider-form 'cfg-parser])
-  (syntax-case rules-stx ()
-    [(_) (raise-syntax-error 'brag
-                             (format "The grammar does not appear to have any rules")
-                             rules-stx)]
-    [(_ . RULES)
-     (let ([rules (syntax->list #'RULES)]) ;; (listof stx)
-       
-       (check-all-rules-defined! rules)
-       (check-all-rules-no-duplicates! rules)
-       (check-all-rules-satisfiable! rules)
-       
-       ;; We flatten the rules so we can use
-       ;; the yacc-style ruleset that br-parser-tools supports.       
-       (define generated-rule-codes (map flat-rule->yacc-rule (flatten-rules rules)))
-       (define rule-ids (map rule-id rules))
-       
-       (define token-types ;; (listof symbol)
-         (let-values ([(implicit-tokens explicit-tokens) (rules-collect-token-types rules)])
-           (remove-duplicates (append (map string->symbol (map syntax-e implicit-tokens))
-                                      (map syntax-e explicit-tokens)) eq?)))
-
-       (define (rules-stx-id sym) (datum->syntax rules-stx sym))
-       
-       (with-syntax ([START-ID (first rule-ids)] ; The first rule, by default, is the start rule.
-                     [(TOKEN-TYPE ...) token-types]
-                     [(TOKEN-TYPE-CONSTRUCTOR ...) (for/list ([tt (in-list token-types)])
-                                                     (string->symbol (format "token-~a" tt)))]
-                     [GENERATED-GRAMMAR `(grammar ,@generated-rule-codes)]
-                     [PARSER-MODULE parser-provider-module]
-                     [PARSER-FORM parser-provider-form]
-                     [PARSE (rules-stx-id 'parse)]
-                     [PARSE-TO-DATUM (rules-stx-id 'parse-to-datum)]
-                     [PARSE-TREE (rules-stx-id 'parse-tree)]
-                     [MAKE-RULE-PARSER (rules-stx-id 'make-rule-parser)]
-                     [ALL-TOKEN-TYPES (rules-stx-id 'all-token-types)]
-                     [TOKEN (rules-stx-id 'token)]
-                     [APPLY-LEXER (rules-stx-id 'apply-lexer)]
-                     [APPLY-TOKENIZER-MAKER (rules-stx-id 'apply-tokenizer-maker)])
-         ;; this stx object represents the top level of a #lang brag module.
-         ;; so any `define`s are automatically available at the repl.
-         ;; and only identifiers explicitly `provide`d are visible on import.
-         (quasisyntax/loc rules-stx
-           (begin             
-             (require br-parser-tools/lex
-                      PARSER-MODULE
-                      brag/codegen/runtime
-                      brag/support
-                      brag/private/internal-support
-                      racket/set
-                      (for-syntax racket/base))
-             
-             (provide PARSE
-                      PARSE-TO-DATUM
-                      PARSE-TREE
-                      MAKE-RULE-PARSER
-                      ALL-TOKEN-TYPES)
-             
-             ;; helpers from brag/support
-             (define TOKEN token)
-             (define APPLY-LEXER apply-lexer)
-             (define APPLY-TOKENIZER-MAKER apply-tokenizer-maker)
-             
-             (define-tokens enumerated-tokens (TOKEN-TYPE ...))
-             
-             ;; all-token-types lists all the tokens (except for EOF)
-             (define ALL-TOKEN-TYPES (set-remove (set 'TOKEN-TYPE ...) 'EOF))
-             
-             ;; For internal use by the permissive tokenizer only:
-             (define all-tokens-hash/mutable
-               (make-hash (list ;; Note: we also allow the eof object here, to make
-                           ;; the permissive tokenizer even nicer to work with.
-                           (cons eof token-EOF) 
-                           (cons 'TOKEN-TYPE TOKEN-TYPE-CONSTRUCTOR) ...)))
-             
-             (define-syntax (MAKE-RULE-PARSER rule-id-stx)
-               (syntax-case rule-id-stx ()
-                 [(_ start-rule)
-                  (and (identifier? #'start-rule)
-                       (member (syntax-e #'start-rule) '#,(map syntax-e rule-ids)))
-                  ;; HACK HACK HACK
-                  ;; The cfg-parser depends on the start-rule provided in (start ...) to have the same
-                  ;; context as the rest of this body, so I need to hack this.  I don't like this, but
-                  ;; I don't know what else to do.  Hence recolored-start-rule.
-                  (with-syntax ([RECOLORED-START-RULE (datum->syntax #'#,rules-stx (syntax-e #'start-rule))])
-                    #'(let ([THE-GRAMMAR (PARSER-FORM (tokens enumerated-tokens)
-                                                      (src-pos)
-                                                      (start RECOLORED-START-RULE)
-                                                      (end EOF)
-                                                      (error THE-ERROR-HANDLER)
-                                                      GENERATED-GRAMMAR)])
-                        (procedure-rename
-                         (case-lambda [(tokenizer)
-                                       (define next-token
-                                         (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                       (THE-GRAMMAR next-token)]
-                                      [(source tokenizer)
-                                       (parameterize ([current-source source])
-                                         (PARSE tokenizer))])
-                         (string->symbol (format "~a-rule-parser" 'start-rule)))))]
-                 [(_ not-a-rule-id)
-                  (raise-syntax-error #f
-                                      (format "Rule ~a is not defined in the grammar" (syntax-e #'not-a-rule-id))
-                                      rule-id-stx)]))
-             
-             (define PARSE (procedure-rename (MAKE-RULE-PARSER START-ID) 'PARSE))
-             
-             (define (PARSE-TO-DATUM x)
-               (let loop ([x (syntax->datum (PARSE x))])
-                 (cond
-                   [(list? x) (map loop x)]
-                   [else x])))
-
-             (define PARSE-TREE PARSE-TO-DATUM)))))]))
-
+(provide (all-defined-out)
+         (for-template (all-from-out brag/codegen/runtime
+                                     brag/private/internal-support)))
 
 ;; Given a flattened rule, returns a syntax for the code that
 ;; preserves as much source location as possible.
