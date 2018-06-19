@@ -171,7 +171,7 @@ This would be the place to check a syntax property for hiding.
   (datum->syntax #f d (positions->srcloc start-pos end-pos) stx-with-original?-property))
 
 
-(define (remove-rule-name component-stx [splice #f])
+(define (remove-rule-name component-stx #:splice? [splice #f])
   ;; when removing a rule name, we apply it as a syntax property to the remaining elements
   ;; for possible later usage (aka, why throw away information)   
   (with-syntax ([(name . subcomponents) component-stx])
@@ -191,14 +191,17 @@ This would be the place to check a syntax property for hiding.
    ;; inside `component-stx` is a name followed by subcomponents
    (for*/list ([component-list (in-list component-lists)]
                [component-stx (in-list component-list)]) ; this has the effect of omitting any empty `component-list`
-              (list
-               (cond
-                 [(eq? (syntax-property component-stx 'hide-or-splice) 'hide)
-                  (list (remove-rule-name component-stx))] ; hidden version still wrapped in a sublist
-                 [(or (eq? (syntax-property component-stx 'hide-or-splice) 'splice)
-                      (syntax-property component-stx 'splice-rh-id))
-                  (remove-rule-name component-stx #t)] ; spliced version is lifted out of the sublist
-                 [else (list component-stx)])))))
+     (list
+      (cond
+        ;; test splice first in case both hiding and splicing are set, for instance:
+        ;; /rule : thing @rule
+        ;; otherwise the hide prevents the splice from being expressed
+        [(or (eq? (syntax-property component-stx 'hide-or-splice) 'splice)
+             (syntax-property component-stx 'splice-rh-id))
+         (remove-rule-name component-stx #:splice? #t)] ; spliced version is lifted out of the sublist
+        [(eq? (syntax-property component-stx 'hide-or-splice) 'hide)
+         (list (remove-rule-name component-stx))] ; hidden version still wrapped in a sublist
+        [else (list component-stx)])))))
 
 
 ;; rule-components->syntax: (U symbol false) (listof stx) ... #:srcloc (U #f (list src line column offset span)) -> stx

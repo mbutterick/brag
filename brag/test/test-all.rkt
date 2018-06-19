@@ -10,6 +10,7 @@
          "test-empty-symbol.rkt"
          "test-errors.rkt"
          "test-flatten.rkt"
+         "test-hide-and-splice.rkt"
          "test-lexer.rkt"
          "test-old-token.rkt"
          "test-parser.rkt"
