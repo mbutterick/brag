@@ -171,48 +171,61 @@ This would be the place to check a syntax property for hiding.
   (datum->syntax #f d (positions->srcloc start-pos end-pos) stx-with-original?-property))
 
 
-(define (remove-rule-name component-stx #:splice? [splice #f])
-  ;; when removing a rule name, we apply it as a syntax property to the remaining elements
-  ;; for possible later usage (aka, why throw away information)   
-  (with-syntax ([(name . subcomponents) component-stx])
-    (let ([name-datum (syntax->datum #'name)])
-      (if splice
-          ;; when splicing, returned list is a regular list, with each element having the property.
-          (map (λ(sc) (syntax-property sc name-datum #'name)) (syntax->list #'subcomponents))
-          ;; when hiding, returned list should be a syntaxed list with the property
-          ;; iow, basically the same as `component-stx`, minus the name
-          (syntax-property (datum->syntax component-stx #'subcomponents component-stx component-stx) name-datum #'name)))))
+(define (apply-name-property name-stx stxs)
+  (for/list ([stx (in-list (syntax->list stxs))])
+    (syntax-property stx (syntax->datum name-stx) name-stx)))
 
 
-(define (preprocess-component-lists component-lists)
-  ; "preprocess" means splicing and rule-name-hiding where indicated
+(define (splice-stx component-stx)
+  ;; when splicing, we apply rule name as a syntax property to the remaining elements
+  (syntax-case component-stx ()
+    [(name . subcomponents)
+     (syntax-property #'name 'rule-id) ; name has not been removed (recognized by presence of 'rule-id)
+     (apply-name-property #'name #'subcomponents)]
+    [subcomponents ; name has been removed, but it is stored in 'generating-rule property
+     (let* ([name-datum (syntax-property #'subcomponents 'generating-rule)]
+            [name-stx (syntax-property #'subcomponents name-datum)])
+       (apply-name-property name-stx #'subcomponents))]))
+
+
+(define (remove-rule-name component-stx)
+  (syntax-case component-stx ()
+    [(name . subcomponents)
+     (let ([name-datum (syntax->datum #'name)])
+       (syntax-property
+        (syntax-property
+         (datum->syntax component-stx #'subcomponents component-stx component-stx)
+         name-datum #'name)
+        'generating-rule name-datum))]))
+
+
+(define (splice-component-lists component-lists)
+  ;; each `component-list` is a list that's either empty, or contains component-stx objects
+  ;; inside `component-stx` is a name followed by subcomponents
   (append*
-   ;; each `component-list` is a list that's either empty, or has a single component-stx object
-   ;; inside `component-stx` is a name followed by subcomponents
    (for*/list ([component-list (in-list component-lists)]
-               [component-stx (in-list component-list)]) ; this has the effect of omitting any empty `component-list`
-     (list
-      (cond
-        ;; test splice first in case both hiding and splicing are set, for instance:
-        ;; /rule : thing @rule
-        ;; otherwise the hide prevents the splice from being expressed
-        [(or (eq? (syntax-property component-stx 'hide-or-splice) 'splice)
+               #:unless (empty? component-list) 
+               [component-stx (in-list component-list)])
+     (if (or (eq? (syntax-property component-stx 'hide-or-splice) 'splice)
              (syntax-property component-stx 'splice-rh-id))
-         (remove-rule-name component-stx #:splice? #t)] ; spliced version is lifted out of the sublist
-        [(eq? (syntax-property component-stx 'hide-or-splice) 'hide)
-         (list (remove-rule-name component-stx))] ; hidden version still wrapped in a sublist
-        [else (list component-stx)])))))
+         (splice-stx component-stx) ; spliced version is lifted out of the sublist
+         (list component-stx))))) ; otherwise left inside sublist
 
 
 ;; rule-components->syntax: (U symbol false) (listof stx) ... #:srcloc (U #f (list src line column offset span)) -> stx
 ;; Creates an stx out of the rule name and its components.
 ;; The location information of the rule spans that of its components.
 (define (rule-components->syntax rule-name/false #:srcloc [srcloc #f] #:hide-or-splice? [hide-or-splice #f] . component-lists)
-  (define new-rule-name (datum->syntax #f rule-name/false srcloc stx-with-original?-property))
-  (define new-rule-components (append* (preprocess-component-lists component-lists)))
-  (define rule-result (cons new-rule-name new-rule-components))
+  (define new-rule-name (syntax-property
+                         (datum->syntax #f rule-name/false srcloc stx-with-original?-property)
+                         'rule-id #t))
+  (define rule-result (cons new-rule-name (splice-component-lists component-lists)))
   (define syntaxed-rule-result (datum->syntax #f rule-result srcloc stx-with-original?-property))
-  ;; not 'hide-or-splice-lhs-id, because this will now become a (right-hand) component in a different (left-hand) rule
-  ;; actual splicing happens when the parent rule is processed (with procedure above)
-  (syntax-property syntaxed-rule-result 'hide-or-splice hide-or-splice))
+  ;; not 'hide-or-splice-lhs-id, because this will now become
+  ;; a (right-hand) component in a different (left-hand) rule
+  ;; actual splicing happens when the parent rule is processed (with `splice-component-lists`)
+  (syntax-property ((if (eq? hide-or-splice 'hide)
+                        remove-rule-name
+                        values) syntaxed-rule-result)
+                   'hide-or-splice hide-or-splice))
 

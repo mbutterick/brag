@@ -11,6 +11,7 @@
          "test-errors.rkt"
          "test-flatten.rkt"
          "test-hide-and-splice.rkt"
+         "test-hide-top.rkt"
          "test-lexer.rkt"
          "test-old-token.rkt"
          "test-parser.rkt"

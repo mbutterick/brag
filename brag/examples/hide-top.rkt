@@ -1,0 +1,2 @@
+#lang brag
+/top : "x"
