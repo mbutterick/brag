@@ -27,6 +27,6 @@
      (define end (send tbox line-end-position prev-line))
      (for*/first ([pos (in-range start end)]
                   [c (in-value (send tbox get-character pos))]
-                  #:when (or (char=? c #\:) (char=? c #\|)))
+                  #:when (memv c '(#\: #\|)))
        (- pos start))]
     [else #f]))
