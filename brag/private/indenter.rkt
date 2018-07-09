@@ -22,7 +22,7 @@
   (define this-line (line tbox posn))
   (cond
     [(not prev-line) #f]
-    [(char=? (line-first-visible-char tbox this-line) #\|)
+    [(eqv? (line-first-visible-char tbox this-line) #\|)
      (define start (send tbox line-start-position prev-line))
      (define end (send tbox line-end-position prev-line))
      (for*/first ([pos (in-range start end)]
