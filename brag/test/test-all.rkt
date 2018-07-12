@@ -18,6 +18,7 @@
          "test-simple-arithmetic-grammar.rkt"
          "test-simple-line-drawing.rkt"
          "test-start-and-atok.rkt"
+         "test-top-level-cut.rkt"
          "test-weird-grammar.rkt"
          "test-whitespace.rkt"
          "test-wordy.rkt"

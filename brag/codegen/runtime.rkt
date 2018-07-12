@@ -212,7 +212,9 @@ This would be the place to check a syntax property for hiding.
 ;; Creates an stx out of the rule name and its components.
 ;; The location information of the rule spans that of its components.
 (define (rule-components->syntax rule-name/false #:srcloc [srcloc #f] #:hide-or-splice? [hide-or-splice #f] . component-lists)
-  (define new-rule-name (datum->syntax #f rule-name/false srcloc stx-with-original?-property))
+  (define new-rule-name
+    ;; stash the hide property on rule names so we can use it later if we want
+    (syntax-property (datum->syntax #f rule-name/false srcloc stx-with-original?-property) 'hide-or-splice? hide-or-splice))
   (define new-rule-components (preprocess-component-lists component-lists))
   (define rule-result (cons new-rule-name new-rule-components))
   (define syntaxed-rule-result (datum->syntax #f rule-result srcloc stx-with-original?-property))

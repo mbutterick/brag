@@ -17,7 +17,7 @@
 (define-for-syntax (rules->token-types rules)
   (define-values (implicit-tokens explicit-tokens) (rules-collect-token-types rules))
   (remove-duplicates (append (for/list ([it (in-list implicit-tokens)])
-                                       (string->symbol (syntax-e it)))
+                               (string->symbol (syntax-e it)))
                              (map syntax-e explicit-tokens)) eq?))
 
 (define-syntax (brag-module-begin rules-stx)
@@ -37,7 +37,7 @@
        (with-syntax ([START-ID (first rule-ids)] ; The first rule, by default, is the start rule.
                      [((TOKEN-TYPE . TOKEN-TYPE-CONSTRUCTOR) ...)
                       (for/list ([tt (in-list (rules->token-types rules))])
-                                (cons tt (string->symbol (format "token-~a" tt))))]
+                        (cons tt (string->symbol (format "token-~a" tt))))]
                      ;; Flatten rules to use the yacc-style ruleset that br-parser-tools supports       
                      [GENERATED-RULE-CODES (map flat-rule->yacc-rule (flatten-rules rules))]
                      ;; main exports. Break hygiene so they're also available at top-level / repl
@@ -88,7 +88,12 @@
                         (case-lambda [(tokenizer)
                                       (define next-token
                                         (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                      (THE-GRAMMAR next-token)]
+                                      ;; little post-processor to allow cuts on top rule name
+                                      (syntax-case (THE-GRAMMAR next-token) ()
+                                        [(TOP-RULE-NAME . REST)
+                                         (eq? (syntax-property #'TOP-RULE-NAME 'hide-or-splice?) 'hide)
+                                         #'REST]
+                                        [ALL #'ALL])]
                                      [(source tokenizer)
                                       (parameterize ([current-source source])
                                         (PARSE tokenizer))])
