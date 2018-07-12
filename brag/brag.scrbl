@@ -1080,19 +1080,23 @@ In addition to the exports shown below, the @racketmodname[brag/support] module 
  DrRacket should highlight the offending locations in the source.}
 
 
-
-@defproc[(apply-tokenizer-maker [tokenizer-maker procedure?] 
-                                [source (or/c string?
-                                              input-port?)])
+@defproc[(apply-port-proc [proc procedure?] 
+                      [port (or/c string? input-port?) (current-input-port)])
          list?]{
- Repeatedly apply @racket[tokenizer-maker] to @racket[source], gathering the resulting tokens into a list. @racket[source] can be a string or an input port. Useful for testing or debugging a tokenizer.
+ Repeatedly apply @racket[proc] to @racket[port], gathering the results into a list. @racket[port] can be an input port or a string (which is converted to a string port). Useful for testing or debugging a lexer or tokenizer.
 }
 
 @defproc[(apply-lexer [lexer procedure?] 
-                      [source (or/c string?
-                                    input-port?)])
+                      [port (or/c string? input-port?) (current-input-port)])
          list?]{
- Repeatedly apply @racket[lexer] to @racket[source], gathering the resulting tokens into a list. @racket[source] can be a string or an input port. Useful for testing or debugging a lexer.
+Alias for @racket[apply-port-proc].
+}
+
+
+@defproc[(apply-tokenizer-maker [tokenizer-maker procedure?] 
+                                [port (or/c string? input-port?) (current-input-port)])
+         list?]{
+ Repeatedly apply @racket[tokenizer-maker] to @racket[port], gathering the resulting tokens into a list. @racket[port] can be an input port or a string (which is converted to a string port).
 }
 
 

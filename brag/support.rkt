@@ -60,14 +60,15 @@
                                 (exn:fail:parsing-srclocs instance)))
 
 
-(provide apply-lexer)
-(define (apply-lexer lexer val)
-  (for/list ([t (in-port lexer (if (string? val) (open-input-string val) val))])
+(provide (rename-out [apply-port-proc apply-lexer])
+         apply-port-proc)
+(define (apply-port-proc proc [val (current-input-port)])
+  (for/list ([t (in-port proc (if (string? val) (open-input-string val) val))])
             t))
 
 (provide apply-tokenizer-maker
          (rename-out [apply-tokenizer-maker apply-tokenizer]))
-(define (apply-tokenizer-maker tokenize in)
+(define (apply-tokenizer-maker tokenize [in (current-input-port)])
   (define input-port (if (string? in)
                          (open-input-string in)
                          in))
