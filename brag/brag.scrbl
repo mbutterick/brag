@@ -858,6 +858,8 @@ This time, all the appearances of @racket[term] nodes in the parse tree will hav
 
 As a convenience, when a grammar element is spliced, or a rule name is cut, @racket[brag] preserves the rule name by adding it as a syntax property to the residual elements, using the rule name as a key, and the original syntax object representing the rule name as the value.
 
+Caveat for the top-level rule: though the rule name can have a cut, it cannot have a splice — once you're at the top level, there's nothing above to splice into.
+
 
 @subsection{Syntax errors}
 
