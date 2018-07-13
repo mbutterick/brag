@@ -2,6 +2,7 @@
 (require (for-syntax racket/base
                      racket/list
                      "codegen.rkt"
+                     "runtime.rkt"
                      "flatten.rkt")
          br-parser-tools/lex
          br-parser-tools/cfg-parser
@@ -88,12 +89,15 @@
                         (case-lambda [(tokenizer)
                                       (define next-token
                                         (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                      ;; little post-processor to allow cuts on top rule name
-                                      (syntax-case (THE-GRAMMAR next-token) ()
-                                        [(TOP-RULE-NAME . REST)
-                                         (eq? (syntax-property #'TOP-RULE-NAME 'hide-or-splice?) 'hide)
-                                         #'REST]
-                                        [ALL #'ALL])]
+                                      ;; little post-processor to support cuts on top rule name
+                                      (define parse-tree-stx (THE-GRAMMAR next-token))
+                                      (define top-rule-name-stx (syntax-case parse-tree-stx ()
+                                                                  [(TRN . REST) #'TRN]
+                                                                  [_ (error 'malformed-parse-tree)]))
+                                      (if (eq? (syntax-property top-rule-name-stx 'hide-or-splice?) 'hide)
+                                          ;; use `remove-rule-name` so we get the same housekeeping
+                                          (remove-rule-name parse-tree-stx) 
+                                          parse-tree-stx)]
                                      [(source tokenizer)
                                       (parameterize ([current-source source])
                                         (PARSE tokenizer))])

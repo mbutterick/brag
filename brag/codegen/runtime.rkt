@@ -1,5 +1,4 @@
 #lang racket/base
-
 (require racket/match 
          racket/list
          racket/generator
@@ -12,7 +11,8 @@
          make-permissive-tokenizer
          atomic-datum->syntax
          positions->srcloc
-         rule-components->syntax)
+         rule-components->syntax
+         remove-rule-name)
 
 
 
@@ -177,12 +177,14 @@ This would be the place to check a syntax property for hiding.
   (syntax-case component-stx ()
     [(name . subcomponents)
      (let ([name-datum (syntax->datum #'name)])
+       ;; two properties: 'rule returns name-datum, and name-datum returns original #'name stx
+       (define (annotate-name stx) (syntax-property (syntax-property stx name-datum #'name) 'rule name-datum))
        (if splice
            ;; when splicing, returned list is a regular list, with each element having the property.
-           (map (λ(sc) (syntax-property sc name-datum #'name)) (syntax->list #'subcomponents))
+           (map annotate-name (syntax->list #'subcomponents))
            ;; when hiding, returned list should be a syntaxed list with the property
            ;; iow, basically the same as `component-stx`, minus the name
-           (syntax-property (datum->syntax component-stx #'subcomponents component-stx component-stx) name-datum #'name)))]
+           (annotate-name (datum->syntax component-stx #'subcomponents component-stx component-stx))))]
     [_ (raise-syntax-error 'remove-rule-name "component has no name" component-stx)]))
 
 
