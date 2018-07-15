@@ -691,7 +691,7 @@ A @deftech{pattern} is one of the following:
 
   A literal string can match the string itself, or a @racket[token] structure whose type field contains that string (or its symbol form). So @racket["FOO"] in a rule pattern would match the tokens @racket["FOO"], @racket[(token "FOO" "bar")], or @racket[(token 'FOO "bar")]. 
 
-  A symbolic token identifier can also match the string version of the identifier, or a @racket[token] whose type field is the symbol or string form of the identifier. So @racket[FOO] in a rule pattern would @emph{also} match the tokens @racket["FOO"], @racket[(token 'FOO "bar")], or @racket[(token "FOO" "bar")]. (In every case, the value of a token, like @racket["bar"], can be anything, and may or may not be the same as its type.)
+  A symbolic token identifier can also match the string version of the identifier, or a @racket[token] whose type field is the symbol or string form of the identifier. So @racket[FOO] in a rule pattern would @emph{also} match the tokens @racket["FOO"], @racket[(token 'FOO "bar")], or @racket[(token "FOO" "bar")]. (In every case, the value of a token, like @racket["bar"], can be anything, and may or may not be the same as the symbolic token identifier.)
 
   Because their underlying meanings are the same, the symbolic token identifier ends up being a notational convenience for readability inside a rule pattern. Typically, the literal string @racket["FOO"] is used to connote ``match the string @racket["FOO"] exactly'' and the symbolic token identifier @racket[FOO] specially connotes ``match a token of type @racket['FOO]''.
 
