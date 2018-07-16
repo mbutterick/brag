@@ -665,7 +665,7 @@ generates.
 @subsection[#:tag "brag-syntax"]{Syntax and terminology}
 A program in the @tt{brag} language consists of the language line
 @litchar{#lang brag}, followed by a collection of @tech{rule}s and
-@tech{line comment}s.
+possibly @tech{comment}s.
 
 A @deftech{rule} is a sequence consisting of: a @tech{rule identifier}, a separator (either @litchar{":"} or @litchar{"::="}), and a @tech{pattern}.
 
@@ -676,14 +676,15 @@ A @deftech{symbolic token identifier} is an @tech{identifier} that is in upper c
 A @deftech{line comment} begins with either @litchar{#} or @litchar{;} and
 continues till the end of the line.
 
+A @deftech{multiline comment} begins with @litchar{(*} and ends with @litchar{*)}.
+
 An @deftech{identifier} is a sequence of letters, numbers, or
 characters in the set @racket["-.!$%&/<=>?^_~@"]. It must not contain
 @litchar{*}, @litchar{+}, or @litchar|{{}| and @litchar|{}}|, as those characters are used to denote quantification.
 
-
 A @deftech{pattern} is one of the following:
 @itemize[
- @item{an implicit sequence of @tech{pattern}s separated by whitespace.}
+ @item{an implicit sequence of @tech{pattern}s separated by whitespace or commas.}
 
  @item{a @deftech{terminal}: either a literal string or a @tech{symbolic token identifier}. 
 

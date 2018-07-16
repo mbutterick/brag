@@ -4,6 +4,7 @@
          (prefix-in : br-parser-tools/lex-sre)
          "parser.rkt"
          "rule-structs.rkt"
+         (only-in brag/support from/to)
          racket/string)
 
 (provide lex/1 tokenize)
@@ -74,14 +75,18 @@
    [(:or "+" "*" "?"
          (:: "{" (:* digit) (:? (:: "," (:* digit))) "}"))
     (token-REPEAT lexeme)]
+   ;; Skip whitespace
    [whitespace
-    ;; Skip whitespace
     (return-without-pos (lex/1 input-port))]
+   ;; skip multiline comments
+   [(from/to "(*" "*)") (return-without-pos (lex/1 input-port))]
    ;; Skip comments up to end of line
    [(:: (:or "#" ";")
         (complement (:: (:* any-char) NL (:* any-char)))
         (:or NL ""))
     (return-without-pos (lex/1 input-port))]
+   ;; skip commas (concatenation is implied)
+   ["," (return-without-pos (lex/1 input-port))]
    [(eof)
     (token-EOF lexeme)]
    [(:: id (:* whitespace) id-separator)

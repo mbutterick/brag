@@ -12,7 +12,8 @@
          (from/to "'" "'")
          (from/to "\"" "\"")) (token 'LIT lexeme)]
    [(:or "()" "Ø" "∅") (token 'NO-COLOR lexeme)] ; empty set symbols
-   [(:or (char-set "()[]{}|+*:?") hide-char splice-char) (token 'MISC lexeme)]
+   [(:or (char-set "()[]{}|+*:?") hide-char splice-char "::=") (token 'MISC lexeme)]
+   [(from/to "(*" "*)") (token 'COMMENT lexeme)]
    [(:seq (:or "#" ";") (complement (:seq (:* any-char) NL (:* any-char))) (:or NL "")) (token 'COMMENT lexeme)]
    [id (token 'ID lexeme)]
    [any-char (token 'OTHER lexeme)]))

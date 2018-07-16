@@ -25,7 +25,7 @@
   (syntax-case rules-stx ()
     [(_) (raise-syntax-error 'brag
                              (format "The grammar does not appear to have any rules")
-                             'brag-module)]
+                             (syntax-source rules-stx))]
     [(_ . RULES)
      (let ([rules (syntax->list #'RULES)]) ;; (listof stx)
        
