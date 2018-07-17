@@ -46,5 +46,5 @@
 (check-exn exn:fail:parsing? 
            (lambda () (parse '("zero" "one" "zero"))))
 (check-exn (regexp (regexp-quote
-                    "Encountered unexpected token \"zero\" (\"zero\") while parsing"))
+                    "Encountered unexpected token of type \"zero\" (value \"zero\") while parsing"))
            (lambda () (parse '("zero" "one" "zero"))))
