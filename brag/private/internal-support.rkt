@@ -27,10 +27,10 @@
   (make-parameter
    (lambda (tok-type tok-value offset line column span)
      (raise (exn:fail:parsing
-             (format "Encountered unexpected token ~e (~e) while parsing ~e [line=~a, column=~a, offset=~a]"
-                     tok-type
-                     tok-value
-                     (current-source)
-                     line column offset)
+             (string-append
+              (format "Encountered unexpected token ~e (~e) while parsing" tok-type tok-value)
+              (if (or (current-source) line column offset)
+                  (format " ~e [line=~a, column=~a, offset=~a]" (current-source) line column offset)
+                  ""))
              (current-continuation-marks)
              (list (srcloc (current-source) line column offset span)))))))
