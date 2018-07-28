@@ -60,17 +60,22 @@
                                 (exn:fail:parsing-srclocs instance)))
 
 
+(define (open-input-string-with-locs str)
+  (parameterize ([port-count-lines-enabled #t])
+    (open-input-string str)))
+
+
 (provide (rename-out [apply-port-proc apply-lexer])
          apply-port-proc)
 (define (apply-port-proc proc [val (current-input-port)])
-  (for/list ([t (in-port proc (if (string? val) (open-input-string val) val))])
+  (for/list ([t (in-port proc (if (string? val) (open-input-string-with-locs val) val))])
             t))
 
 (provide apply-tokenizer-maker
          (rename-out [apply-tokenizer-maker apply-tokenizer]))
 (define (apply-tokenizer-maker tokenize [in (current-input-port)])
   (define input-port (if (string? in)
-                         (open-input-string in)
+                         (open-input-string-with-locs in)
                          in))
   (define token-producer (tokenize input-port))
   (for/list ([token (in-producer token-producer (λ(tok)
