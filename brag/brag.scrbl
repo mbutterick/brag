@@ -665,7 +665,7 @@ generates.
 @subsection[#:tag "brag-syntax"]{Syntax and terminology}
 A program in the @tt{brag} language consists of the language line
 @litchar{#lang brag}, followed by a collection of @tech{rule}s and
-possibly @tech{comment}s.
+possibly @tech{line comment}s or @tech{multiline comment}s.
 
 A @deftech{rule} is a sequence consisting of: a @tech{rule identifier}, a separator (either @litchar{":"} or @litchar{"::="}), and a @tech{pattern}.
 
