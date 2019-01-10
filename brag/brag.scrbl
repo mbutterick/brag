@@ -816,7 +816,7 @@ term : factor (/'*' factor)*
        | "8"  | "9")+
 }|
 
-This time, the rule name disppears from the parse tree, but its nodes and elements remain:
+This time, the rule name disappears from the parse tree, but its nodes and elements remain:
 
 @racketblock['(expr (term ("1")) (term ("2") ("3")))]
 
