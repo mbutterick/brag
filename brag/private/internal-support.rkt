@@ -7,7 +7,7 @@
          current-tokenizer-error-handler)
 
 ;; During parsing, we should define the source of the input.
-(define current-source (make-parameter #f))
+(define current-source (make-parameter 'unknown))
 
 
 ;; When an parse error happens, we call the current-parser-error-handler:
