@@ -6,38 +6,33 @@
          flatten-rules
          prim-rule)
 
-
-
 (define (make-fresh-name)
   (let ([n 0])
-    (lambda ()
+    (λ ()
       (set! n (add1 n))
       (string->symbol (format "%rule~a" n)))))
 
-(define default-fresh-name
-  (make-fresh-name))
+(define default-fresh-name (make-fresh-name))
 
 
 ;; Translates rules to lists of primitive rules.
 
 
 (define (flatten-rules rules #:fresh-name [fresh-name default-fresh-name])
-  (define ht (make-hash))
-  (apply append (map (lambda (a-rule) (flatten-rule a-rule
-                                                    #:ht ht
-                                                    #:fresh-name fresh-name))
-                     rules)))
+  (define ht (make-hasheq))
+  (apply append (for/list ([a-rule (in-list rules)])
+                  (flatten-rule a-rule
+                                #:ht ht
+                                #:fresh-name fresh-name))))
 
 
 ;; flatten-rule: rule -> (listof primitive-rule)
 (define (flatten-rule a-rule
                       #:fresh-name [fresh-name default-fresh-name]
-
                       ;; ht: (hashtableof pattern-hash-key pat)
-                      #:ht [ht (make-hash)])
+                      #:ht [ht (make-hasheq)])
 
-  (let recur ([a-rule a-rule]
-              [inferred? #f])
+  (let recur ([a-rule a-rule] [inferred? #f])
 
     ;; lift-nonprimitive-pattern: pattern -> (values (listof primitive-rule) pattern)
     ;; Turns non-primitive patterns into primitive patterns, and produces a set of
@@ -98,6 +93,14 @@
                 (append (list #'(HEAD ORIGIN NAME [SUB-PAT ...] ...))
                         (apply append (reverse inferred-ruless/rev)))))]
 
+           [(repeat 0 0 SUB-PAT)
+            ;; repeat from 0 to 0 (is a no-op)
+            (recur #'(rule NAME (seq)) #f)]
+
+           [(repeat 0 MAYBE-MAX SUB-PAT)
+            ;; repeat from 0 (as a maybe rule)
+            (recur #'(rule NAME (maybe (repeat 1 MAYBE-MAX SUB-PAT))) #f)]
+
            [(repeat MIN #f SUB-PAT)
             ;; indefinite repeat
             (begin
@@ -115,10 +118,15 @@
             (begin
               (define min (syntax-e #'MIN))
               (define max (syntax-e #'MAX))
-              (define new-rule-stx (with-syntax ([(MIN-SUBPAT ...) (make-list min #'SUB-PAT)]
-                                                 [(EXTRA-SUBPAT ...) (make-list (- max min) #'SUB-PAT)])
-                                     ;; has to keep the same name to work correctly
-                                     #'(rule NAME (seq MIN-SUBPAT ... (maybe EXTRA-SUBPAT) ...))))
+              (unless (<= min max)
+                (raise-syntax-error #f (format "minimum repeat count cannot be larger than maximum, got {~a,~a}" min max) a-rule))
+              ;; has to keep the same rule NAME to work correctly
+              (define new-rule-stx
+                (if (= min max)
+                    (with-syntax ([MIN-SUBPATS (make-list min #'SUB-PAT)])
+                                  #'(rule NAME (seq . MIN-SUBPATS)))
+                    (with-syntax ([REPEATS-REMAINING (- max min)]) ; REPEATS-REMAINING is a positive integer
+                      #'(rule NAME (seq (repeat MIN MIN SUB-PAT) (repeat 0 REPEATS-REMAINING SUB-PAT))))))
               (recur new-rule-stx #f))]
 
            [(maybe SUB-PAT)

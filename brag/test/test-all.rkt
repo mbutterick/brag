@@ -12,6 +12,7 @@
          "test-flatten.rkt"
          "test-hide-and-splice.rkt"
          "test-lexer.rkt"
+         "test-nested-repeats.rkt"
          "test-old-token.rkt"
          "test-parser.rkt"
          "test-quotation-marks-and-backslashes.rkt"
