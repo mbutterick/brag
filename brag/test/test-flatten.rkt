@@ -76,36 +76,33 @@
 ;; maybe
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule expr (maybe (id rule-2)))))
-              '((prim-rule maybe expr
-                           [(id rule-2)]
-                           [])))
+              '((prim-rule choice expr ((id rule-2)) ())))
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule expr (maybe (token HUH)))))
-              '((prim-rule maybe expr
-                           [(token HUH)]
-                           [])))
+              '((prim-rule choice expr ((token HUH)) ())))
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule expr (maybe (seq (lit "hello") (lit "world"))))))
-              '((prim-rule maybe expr
-                           [(lit "hello") (lit "world")]
-                           [])))
-
-
-
+              '((prim-rule choice expr ((lit "hello") (lit "world")) ())))
 
 ;; repeat
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule rule-2+ (repeat 0 #f (id rule-2)))))
-              '((prim-rule maybe rule-2+ ((inferred-id %rule1 repeat)) ())
-                (inferred-prim-rule repeat %rule1
-                                    ((inferred-id %rule1 repeat) (id rule-2))
-                                    ((id rule-2)))))
+              '((prim-rule choice rule-2+ ((inferred-id %rule1 seq)) ())
+    (inferred-prim-rule seq %rule1 ((inferred-id %rule2 repeat)))
+    (inferred-prim-rule
+     repeat
+     %rule2
+     ((inferred-id %rule2 repeat) (id rule-2))
+     ((id rule-2)))))
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule rule-2+ (repeat 0 #f (seq (lit "+") (id rule-2))))))
-              '((prim-rule maybe rule-2+ ((inferred-id %rule2 repeat)) ())
-                (inferred-prim-rule repeat %rule2
-                                    ((inferred-id %rule2 repeat) (lit "+") (id rule-2))
-                                    ((lit "+") (id rule-2)))))
+              '((prim-rule choice rule-2+ ((inferred-id %rule3 seq)) ())
+    (inferred-prim-rule seq %rule3 ((inferred-id %rule4 repeat)))
+    (inferred-prim-rule
+     repeat
+     %rule4
+     ((inferred-id %rule4 repeat) (lit "+") (id rule-2))
+     ((lit "+") (id rule-2)))))
 
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule rule-2+ (repeat 1 #f (id rule-2)))))
@@ -130,26 +127,22 @@
                    (flatten-rule #'(rule sexp (choice (lit "x")
                                                       (maybe (lit "y"))))
                                  #:fresh-name (make-fresh-name)))
-              '((prim-rule choice sexp
-                           [(lit "x")]
-                           [(inferred-id r1 maybe)])
-                (inferred-prim-rule maybe r1
-                                    [(lit "y")]
-                                    [])))
+              '((prim-rule choice sexp ((lit "x")) ((inferred-id r1 maybe)))
+    (prim-rule choice r1 ((lit "y")) ())))
+
 ;; choice, maybe, repeat
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule sexp (choice (lit "x")
                                                       (maybe (repeat 1 #f (lit "y")))))
                                  #:fresh-name (make-fresh-name)))
-              '((prim-rule choice sexp
-                           [(lit "x")]
-                           [(inferred-id r1 maybe)])
-                (inferred-prim-rule maybe r1
-                                    [(inferred-id r2 repeat)]
-                                    [])
-                (inferred-prim-rule repeat r2
-                                    [(inferred-id r2 repeat) (lit "y")]
-                                    [(lit "y")])))
+              '((prim-rule choice sexp ((lit "x")) ((inferred-id r1 maybe)))
+    (prim-rule choice r1 ((inferred-id r2 seq)) ())
+    (inferred-prim-rule seq r2 ((inferred-id r3 repeat)))
+    (inferred-prim-rule
+     repeat
+     r3
+     ((inferred-id r3 repeat) (lit "y"))
+     ((lit "y")))))
 ;; choice, seq
 (check-equal? (map syntax->datum
                    (flatten-rule #'(rule sexp (choice (seq (lit "x") (lit "y"))
@@ -164,12 +157,9 @@
                    (flatten-rule #'(rule sexp (maybe (choice (seq (lit "x") (lit "y"))
                                                              (seq (lit "z") (lit "w")))))
                                  #:fresh-name (make-fresh-name)))
-              '((prim-rule maybe sexp
-                           [(inferred-id r1 choice)]
-                           [])
-                (inferred-prim-rule choice r1
-                                    [(lit "x") (lit "y")]
-                                    [(lit "z") (lit "w")])))
+              '((prim-rule choice sexp ((inferred-id r1 seq)) ())
+    (inferred-prim-rule seq r1 ((inferred-id r2 choice)))
+    (inferred-prim-rule choice r2 ((lit "x") (lit "y")) ((lit "z") (lit "w")))))
 
 
 ;; seq, repeat
@@ -177,10 +167,13 @@
                    (flatten-rule #'(rule expr (seq (id term) (repeat 0 #f (seq (lit "+") (id term)))))
                                  #:fresh-name (make-fresh-name)))
               '((prim-rule seq expr ((id term) (inferred-id r1 repeat)))
-                (prim-rule maybe r1 ((inferred-id r2 repeat)) ())
-                (inferred-prim-rule repeat r2
-                                    ((inferred-id r2 repeat) (lit "+") (id term))
-                                    ((lit "+") (id term)))))
+    (prim-rule choice r1 ((inferred-id r2 seq)) ())
+    (inferred-prim-rule seq r2 ((inferred-id r3 repeat)))
+    (inferred-prim-rule
+     repeat
+     r3
+     ((inferred-id r3 repeat) (lit "+") (id term))
+     ((lit "+") (id term)))))
 
 
 ;; larger example: simple arithmetic
@@ -192,13 +185,19 @@
                                   #:fresh-name (make-fresh-name)))
               
               '((prim-rule seq expr ((id term) (inferred-id r1 repeat)))
-                (prim-rule maybe r1 ((inferred-id r2 repeat)) ())
-                (inferred-prim-rule repeat r2
-                 ((inferred-id r2 repeat) (lit "+") (id term))
-                 ((lit "+") (id term)))
-                (prim-rule seq term ((id factor) (inferred-id r3 repeat)))
-                (prim-rule maybe r3 ((inferred-id r4 repeat)) ())
-                (inferred-prim-rule repeat r4
-                 ((inferred-id r4 repeat) (lit "*") (id factor))
-                 ((lit "*") (id factor)))
-                (prim-rule token factor ((token INT)))))
+    (prim-rule choice r1 ((inferred-id r2 seq)) ())
+    (inferred-prim-rule seq r2 ((inferred-id r3 repeat)))
+    (inferred-prim-rule
+     repeat
+     r3
+     ((inferred-id r3 repeat) (lit "+") (id term))
+     ((lit "+") (id term)))
+    (prim-rule seq term ((id factor) (inferred-id r4 repeat)))
+    (prim-rule choice r4 ((inferred-id r5 seq)) ())
+    (inferred-prim-rule seq r5 ((inferred-id r6 repeat)))
+    (inferred-prim-rule
+     repeat
+     r6
+     ((inferred-id r6 repeat) (lit "*") (id factor))
+     ((lit "*") (id factor)))
+    (prim-rule token factor ((token INT)))))

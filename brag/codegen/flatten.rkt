@@ -71,24 +71,24 @@
 
            ;; The primitive types stay as they are:
            [(id val)
-            (list #'(HEAD ORIGIN NAME [PAT]))]
+            (list #'(HEAD ORIGIN NAME [(id val)]))]
            [(inferred-id val reason)
-            (list #'(HEAD ORIGIN NAME [PAT]))]
+            (list #'(HEAD ORIGIN NAME [(inferred-id val reason)]))]
            [(lit val)
-            (list #'(HEAD ORIGIN NAME [PAT]))]
+            (list #'(HEAD ORIGIN NAME [(lit val)]))]
            [(token val)
-            (list #'(HEAD ORIGIN NAME [PAT]))]
+            (list #'(HEAD ORIGIN NAME [(token val)]))]
 
            
            ;; Everything else might need lifting:
            [(choice SUB-PAT ...)
             (begin
               (define-values (inferred-ruless/rev new-sub-patss/rev)
-                (for/fold ([rs '()] [ps '()])
-                          ([p (syntax->list #'(SUB-PAT ...))])
-                  (let-values ([(new-r new-p)
-                                (lift-nonprimitive-pattern p)])
-                    (values (cons new-r rs) (cons new-p ps)))))
+                (for/fold ([rs null]
+                           [ps null])
+                          ([p (in-list (syntax->list #'(SUB-PAT ...)))])
+                  (define-values (new-r new-p) (lift-nonprimitive-pattern p))
+                  (values (cons new-r rs) (cons new-p ps))))
               (with-syntax ([((SUB-PAT ...) ...) (reverse new-sub-patss/rev)])
                 (append (list #'(HEAD ORIGIN NAME [SUB-PAT ...] ...))
                         (apply append (reverse inferred-ruless/rev)))))]
@@ -98,7 +98,7 @@
             (recur #'(rule NAME (seq)) #f)]
 
            [(repeat 0 MAYBE-MAX SUB-PAT)
-            ;; repeat from 0 (as a maybe rule)
+            ;; repeat from 0 (as a `maybe` rule)
             (recur #'(rule NAME (maybe (repeat 1 MAYBE-MAX SUB-PAT))) #f)]
 
            [(repeat MIN #f SUB-PAT)
@@ -108,13 +108,10 @@
                 (lift-nonprimitive-pattern #'SUB-PAT))
               (with-syntax ([(SUB-PAT ...) new-sub-pats]
                             [MIN-REPEAT-SUB-PATS (apply append (make-list (syntax-e #'MIN) new-sub-pats))])
-                (cons #`(HEAD ORIGIN NAME
-                              [(inferred-id NAME repeat) SUB-PAT ...]
-                              MIN-REPEAT-SUB-PATS)
-                      inferred-rules)))]
+                (cons #`(HEAD ORIGIN NAME [(inferred-id NAME repeat) SUB-PAT ...] MIN-REPEAT-SUB-PATS) inferred-rules)))]
            
            [(repeat MIN MAX SUB-PAT)
-            ;; finite repeat
+            ;; finite repeat (special case of `seq`)
             (begin
               (define min (syntax-e #'MIN))
               (define max (syntax-e #'MAX))
@@ -124,28 +121,21 @@
               (define new-rule-stx
                 (if (= min max)
                     (with-syntax ([MIN-SUBPATS (make-list min #'SUB-PAT)])
-                                  #'(rule NAME (seq . MIN-SUBPATS)))
+                      #'(rule NAME (seq . MIN-SUBPATS)))
                     (with-syntax ([REPEATS-REMAINING (- max min)]) ; REPEATS-REMAINING is a positive integer
                       #'(rule NAME (seq (repeat MIN MIN SUB-PAT) (repeat 0 REPEATS-REMAINING SUB-PAT))))))
               (recur new-rule-stx #f))]
 
            [(maybe SUB-PAT)
-            (begin
-              (define-values (inferred-rules new-sub-pats)
-                (lift-nonprimitive-pattern #'SUB-PAT))
-              (with-syntax ([(SUB-PAT ...) new-sub-pats])
-                (cons #'(HEAD ORIGIN NAME
-                              [SUB-PAT ...]
-                              [])
-                      inferred-rules)))]
+            ;; special case of `choice`
+            (recur #'(rule NAME (choice (seq SUB-PAT) (seq))) #f)]
 
            [(seq SUB-PAT ...)
             (begin
               (define-values (inferred-rules new-sub-pats)
                 (lift-nonprimitive-patterns (syntax->list #'(SUB-PAT ...))))
               (with-syntax ([(SUB-PAT ...) new-sub-pats])
-                (cons #'(HEAD ORIGIN NAME [SUB-PAT ...])
-                      inferred-rules)))])]))))
+                (cons #'(HEAD ORIGIN NAME [SUB-PAT ...]) inferred-rules)))])]))))
 
 
 ;; Given a pattern, return a key appropriate for a hash.
