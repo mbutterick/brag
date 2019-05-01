@@ -29,6 +29,8 @@
 @title{brag: a better Racket AST generator}
 @author["Danny Yoo (95%)" "Matthew Butterick (5%)"]
 
+
+
 @defmodulelang[brag]
 
 
@@ -761,7 +763,7 @@ More examples:
  }
  ]
 
-@subsection{Cuts & splices}
+@subsection[#:tag "cuts-and-splices"]{Cuts & splices}
 
 By default, every matched token shows up in the parse tree. But sometimes that means that the parse tree ends up holding a bunch of tokens that were only needed to complete the parsing. Once they've served their purpose, it's sometimes useful to filter them out (for instance, to simplify the implementation of a language expander). To help with this kind of housekeeping, @racket[brag] supports @emph{cuts} and @emph{splices}.
 
@@ -1179,5 +1181,22 @@ In other words, this matches @emph{all} the @racket[re]s in order, whereas @rack
 
  Like @racket[from/to], a string that is bounded by @racket[open] and @racket[close], except that @racket[close] is not included in the resulting lexeme. Matching is non-greedy (meaning, it stops at the first occurence of @racket[close]).}
 
+
+@subsection{Differences with @tt{ragg}}
+
+This package is a fork of @link["https://docs.racket-lang.org/ragg"]{@racket[ragg]}. The most salient additions:
+
+@itemize[
+
+@item{@seclink["cuts-and-splices"]{Cuts & splices}.}
+
+@item{Improved @seclink["brag-syntax"]{syntax} for grammars, including comments and and quantified patterns.}
+
+@item{Support for REPL interactions.}
+
+@item{Some new conveniences, like @racket[parse-to-datum], @racket[apply-lexer], @racket[trim-ends], @racket[from/to], and @racket[from/stop-before].
+}
+
+]
 
 @close-eval[my-eval]
