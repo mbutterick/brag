@@ -1,3 +1,10 @@
 #lang info
-(define name "brag-lib")
-(define test-omit-paths '("examples/simple-line-drawing/examples/letter-i.rkt"))
+
+(define collection 'multi)
+
+(define deps '(["base" #:version "6.3"]
+               "br-parser-tools-lib"
+               "rackunit-lib"
+               "brag-lib"))
+
+(define implies deps)
