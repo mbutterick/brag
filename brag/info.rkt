@@ -1,7 +1,23 @@
 #lang info
-(define name "brag")
+
+;; ========================================
+;; pkg info
+
+(define version "1.2")
+(define collection 'multi)
+(define deps '(["base" #:version "6.3"]
+               "br-parser-tools-lib"
+               "rackunit-lib"
+               "brag-lib"))
+(define build-deps '("at-exp-lib"
+                     "br-parser-tools-doc"
+                     "racket-doc"
+                     "scribble-lib"))
+(define implies '("br-parser-tools-lib"
+               "brag-lib"))
+
+;; ========================================
+;; collect info
 
 (define scribblings '(("brag.scrbl")))
-(define blurb '("brag: the Beautiful Racket AST Generator. A fork of Danny Yoo's ragg. A design goal is to be easy for beginners to use. Given a grammar in EBNF, brag produces a parser that generates Racket's native syntax objects with full source location."))
-(define deps (list))
-(define test-omit-paths '("examples/simple-line-drawing/examples/letter-i.rkt"))
+(define name "brag")
