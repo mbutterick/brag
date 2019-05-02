@@ -8,5 +8,4 @@
                "brag-lib"))
 
 (define implies '("br-parser-tools-lib"
-               "rackunit-lib"
                "brag-lib"))
