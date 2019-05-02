@@ -50,5 +50,6 @@ script:
  # don't rely on package server
  - travis_retry raco pkg install --deps search-auto https://github.com/mbutterick/br-parser-tools.git?path=br-parser-tools-lib
  - raco test -p br-parser-tools-lib
+ - travis_retry raco pkg install --deps search-auto https://github.com/mbutterick/brag.git?path=brag-lib
  - travis_retry raco pkg install --deps search-auto https://github.com/mbutterick/brag.git?path=brag
  - raco test -p brag
