@@ -10,6 +10,3 @@
                      "scribble-lib"))
 
 (define implies deps)
-
-(define scribblings '(("brag.scrbl")))
-
