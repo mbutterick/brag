@@ -2,11 +2,12 @@
 
 (define collection 'multi)
 
-(define deps '("brag-lib"))
+(define deps '(["base" #:version "6.3"]
+               "brag-lib"))
 
 (define build-deps '("at-exp-lib"
                      "br-parser-tools-doc"
                      "racket-doc"
                      "scribble-lib"))
 
-(define implies deps)
+(define implies '("brag-lib"))
