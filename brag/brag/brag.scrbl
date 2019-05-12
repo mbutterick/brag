@@ -1041,10 +1041,10 @@ In addition to the exports shown below, the @racketmodname[brag/support] module 
 
 @defproc[(token [type (or/c string? symbol?)]
                 [val any/c #f]
-                [#:line line (or/c positive-integer? #f) #f]
-                [#:column column (or/c nonnegative-integer? #f) #f]
-                [#:position position (or/c positive-integer? #f) #f]
-                [#:span span (or/c nonnegative-integer? #f) #f]
+                [#:line line (or/c exact-positive-integer? #f) #f]
+                [#:column column (or/c exact-nonnegative-integer? #f) #f]
+                [#:position position (or/c exact-positive-integer? #f) #f]
+                [#:span span (or/c exact-nonnegative-integer? #f) #f]
                 [#:skip? skip? boolean? #f]
                 )
          token-struct?]{
@@ -1059,10 +1059,10 @@ In addition to the exports shown below, the @racketmodname[brag/support] module 
 
 @defstruct[token-struct ([type symbol?]
                          [val any/c]
-                         [position (or/c positive-integer? #f)]
-                         [line (or/c nonnegative-integer? #f)]
-                         [column (or/c positive-integer? #f)]
-                         [span (or/c nonnegative-integer? #f)]
+                         [position (or/c exact-positive-integer? #f)]
+                         [line (or/c exact-nonnegative-integer? #f)]
+                         [column (or/c exact-positive-integer? #f)]
+                         [span (or/c exact-nonnegative-integer? #f)]
                          [skip? boolean?])
            #:transparent]{
  The token structure type.
