@@ -913,14 +913,15 @@ grammars.
 A program written in @litchar{#lang brag} produces a module that provides a few
 bindings. The most important of these is @racket[parse]:
 
-@defproc[(parse [source any/c #f] 
+@defproc[(parse [source-path any/c #f] 
                 [token-source (or/c (sequenceof token)
                                     (-> token))])
          syntax?]{
 
- Parses the sequence of @tech{tokens} according to the rules in the grammar, using the
- first rule as the start production. The parse must completely consume
- @racket[token-source].
+ Parses a series of @tech{tokens} according to the rules in the grammar, using the
+ first rule of the grammar for the initial production. The parse must completely consume
+ @racket[token-source]. The optional @racket[source-path] argument is used to enrich the 
+ syntax-location fields.
 
  The @deftech{token source} can either be a sequence, or a 0-arity function that
  produces @tech{tokens}.
