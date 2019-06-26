@@ -923,9 +923,7 @@ bindings. The most important of these is @racket[parse]:
  @racket[token-source]. The optional @racket[source-path] argument is used to enrich the 
  syntax-location fields.
 
- @tt{brag} also exports a function called @racket[parse-rule-id] for each @racket[_rule-id] in the grammar. So a grammar with rules called @tt{top}, @tt{foo}, and @tt{bar} would export @racket[parse-top], @racket[parse-foo], and @racket[parse-bar]. These take the same arguments as @racket[parse], but use the corresponding rule for the initial production, instead of the first rule.
-
- The @deftech{token source} can either be a sequence, or a zero-arity function that
+ The @deftech{token source} can either be a sequence, or a 0-arity function that
  produces @tech{tokens}.
 
  A @deftech{token} in @tt{brag} can be any of the following values:
@@ -976,8 +974,6 @@ Thus, it's only the presence of @tech{rule identifier}s in a rule's
                                              (-> token))])
          list?]{
  Same as @racket[parse], but the result is converted into a plain datum. Useful for testing or debugging a parser.
-
-  @tt{brag} also exports a function called @racket[parse-rule-id-to-datum] for each @racket[_rule-id] in the grammar. So a grammar with rules called @tt{top}, @tt{foo}, and @tt{bar} would export @racket[parse-top-to-datum], @racket[parse-foo-to-datum], and @racket[parse-bar-to-datum]. These take the same arguments as @racket[parse-to-datum], but use the corresponding rule for the initial production, instead of the first rule.
 }
 
 
