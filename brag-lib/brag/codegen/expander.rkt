@@ -80,7 +80,8 @@
                           ;; the permissive tokenizer even nicer to work with.
                           (cons eof token-EOF) 
                           (cons 'TOKEN-TYPE TOKEN-TYPE-CONSTRUCTOR) ...)))
-             
+
+            (module mrp racket/base
             (define-syntax (MAKE-RULE-PARSER rule-id-stx)
               (syntax-case rule-id-stx ()
                 [(_ start-rule)
@@ -89,7 +90,7 @@
                  ;; The cfg-parser depends on the start-rule provided in (start ...) to have the same
                  ;; context as the rest of this body. Hence RECOLORED-START-RULE
                  (with-syntax ([RECOLORED-START-RULE (datum->syntax #'RULES-STX (syntax-e #'start-rule))])
-                   #'(let ([THE-GRAMMAR (cfg-parser (tokens enumerated-tokens)
+                   #`(let ([THE-GRAMMAR (cfg-parser (tokens enumerated-tokens)
                                                     (src-pos)
                                                     (start RECOLORED-START-RULE)
                                                     (end EOF)
@@ -115,11 +116,17 @@
                 [(_ not-a-rule-id)
                  (raise-syntax-error #f
                                      (format "Rule ~a is not defined in the grammar" (syntax-e #'not-a-rule-id))
-                                     rule-id-stx)]))
+                                     rule-id-stx)])))
 
+
+            (module RULE-ID racket/base
+              (require (submod ".." mrp))
+              (define p (MAKE-RULE-PARSER RULE-ID))
+              (provide p)) ...
+            
             (define PARSE-RULE-ID
               (procedure-rename
-               (let ([func-p (delay (MAKE-RULE-PARSER RULE-ID))])
+               (let ([func-p (delay (dynamic-require '(submod #,(syntax-source rules-stx) RULE-ID) 'p))])
                  (λ args (apply (force func-p) args)))
                'PARSE-RULE-ID)) ...
                                 (define (PARSE-RULE-ID-TO-DATUM x)
