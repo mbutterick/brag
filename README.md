@@ -5,9 +5,6 @@ brag [![Build Status](https://travis-ci.org/mbutterick/brag.svg?branch=master)](
 Racket DSL for generating parsers from BNF grammars.
 
 
-Licensed under the LGPL. See `LICENSE`.
-
-
 Install
 -
 
@@ -17,3 +14,9 @@ Install
 Documentation
 -
 http://docs.racket-lang.org/brag/
+
+
+License
+-
+
+MIT. See `LICENSE.md`
