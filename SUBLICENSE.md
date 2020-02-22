@@ -1,6 +1,4 @@
-`brag` contains substantial portions of the following software:
-
-[ragg](https://github.com/jbclements/ragg) 
+`brag` contains substantial portions of the software [`ragg`](https://github.com/jbclements/ragg) 
 
 MIT License for `ragg`
 
