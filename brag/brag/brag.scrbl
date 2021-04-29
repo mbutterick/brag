@@ -1176,11 +1176,11 @@ In other words, this matches @emph{all} the @racket[re]s in order, whereas @rack
 
 @defform[(from/to open close)]{
 
- A string that is bounded by @racket[open] and @racket[close]. Matching is non-greedy (meaning, it stops at the first occurence of @racket[close]). The resulting lexeme includes @racket[open] and @racket[close]. To remove them, see @racket[trim-ends].}
+ A string that is bounded by literal tokens @racket[open] and @racket[close]. Matching is non-greedy (meaning, it stops at the first occurence of @racket[close]). The resulting lexeme includes @racket[open] and @racket[close]. To remove them, see @racket[trim-ends].}
 
 @defform[(from/stop-before open close)]{
 
- Like @racket[from/to], a string that is bounded by @racket[open] and @racket[close], except that @racket[close] is not included in the resulting lexeme. Matching is non-greedy (meaning, it stops at the first occurence of @racket[close]).}
+ Like @racket[from/to], a string that is bounded by literal tokens @racket[open] and @racket[close], except that @racket[close] is not included in the resulting lexeme. Matching is non-greedy (meaning, it stops at the first occurence of @racket[close]).}
 
 
 @subsection{Differences with @tt{ragg}}
