@@ -1,22 +1,24 @@
 
-brag ![Build Status](https://github.com/mbutterick/brag/workflows/CI/badge.svg)
-=
+## brag ![Build Status](https://github.com/mbutterick/brag/workflows/CI/badge.svg)
 
 Racket DSL for generating parsers from BNF grammars.
 
 
-Install
--
+## Install
 
 `raco pkg install brag`
 
 
-Documentation
--
+## Documentation
+
 http://docs.racket-lang.org/brag/
 
 
-License
--
+## License
 
 MIT. See `LICENSE.md`
+
+
+## Project status
+
+Complete. I will maintain the code but no major updates are planned.
