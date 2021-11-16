@@ -18,7 +18,7 @@
 (define-for-syntax (rules->token-types rules)
   (define-values (implicit-tokens explicit-tokens) (rules-collect-token-types rules))
   (remove-duplicates (append (for/list ([it (in-list implicit-tokens)])
-                               (string->symbol (syntax-e it)))
+                                       (string->symbol (syntax-e it)))
                              (map syntax-e explicit-tokens)) eq?))
 
 (define-syntax (brag-module-begin rules-stx)
@@ -38,7 +38,7 @@
        (with-syntax ([START-ID (first rule-ids)] ; The first rule, by default, is the start rule.
                      [((TOKEN-TYPE . TOKEN-TYPE-CONSTRUCTOR) ...)
                       (for/list ([tt (in-list (rules->token-types rules))])
-                        (cons tt (string->symbol (format "token-~a" tt))))]
+                                (cons tt (string->symbol (format "token-~a" tt))))]
                      ;; Flatten rules to use the yacc-style ruleset that br-parser-tools supports       
                      [GENERATED-RULE-CODES (map flat-rule->yacc-rule (flatten-rules rules))]
                      ;; main exports. Break hygiene so they're also available at top-level / repl
@@ -71,41 +71,38 @@
                           (cons eof token-EOF) 
                           (cons 'TOKEN-TYPE TOKEN-TYPE-CONSTRUCTOR) ...)))
              
-            (define-syntax (MAKE-RULE-PARSER rule-id-stx)
-              (syntax-case rule-id-stx ()
-                [(_ start-rule)
-                 (and (identifier? #'start-rule)
-                      (member (syntax-e #'start-rule) 'RULE-IDS))
+            (define-syntax (MAKE-RULE-PARSER stx)
+              (syntax-case stx ()
+                [(_ START-RULE-ID)
+                 (and (identifier? #'START-RULE-ID) (member (syntax-e #'START-RULE-ID) 'RULE-IDS))
                  ;; The cfg-parser depends on the start-rule provided in (start ...) to have the same
                  ;; context as the rest of this body. Hence RECOLORED-START-RULE
-                 (with-syntax ([RECOLORED-START-RULE (datum->syntax #'RULES-STX (syntax-e #'start-rule))])
-                   #'(let ([THE-GRAMMAR (cfg-parser (tokens enumerated-tokens)
-                                                    (src-pos)
-                                                    (start RECOLORED-START-RULE)
-                                                    (end EOF)
-                                                    (error THE-ERROR-HANDLER)
-                                                    (grammar . GENERATED-RULE-CODES))])
-                       (procedure-rename
-                        (case-lambda [(tokenizer)
-                                      (define next-token
-                                        (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                      ;; little post-processor to support cuts on top rule name
-                                      (define parse-tree-stx (THE-GRAMMAR next-token))
-                                      (define top-rule-name-stx (syntax-case parse-tree-stx ()
-                                                                  [(TRN . REST) #'TRN]
-                                                                  [_ (error 'malformed-parse-tree)]))
-                                      (if (eq? (syntax-property top-rule-name-stx 'hide-or-splice?) 'hide)
-                                          ;; use `remove-rule-name` so we get the same housekeeping
-                                          (remove-rule-name parse-tree-stx) 
-                                          parse-tree-stx)]
-                                     [(source tokenizer)
-                                      (parameterize ([current-source source])
-                                        (PARSE tokenizer))])
-                        (string->symbol (format "~a-rule-parser" 'start-rule)))))]
+                 (with-syntax ([RECOLORED-START-RULE (datum->syntax #'RULES-STX (syntax-e #'START-RULE-ID))])
+                   #'(let ()
+                       (define (rule-parser tokenizer)
+                         (define rule-grammar (cfg-parser (tokens enumerated-tokens)
+                                                          (src-pos)
+                                                          (start RECOLORED-START-RULE)
+                                                          (end EOF)
+                                                          (error the-error-handler)
+                                                          (grammar . GENERATED-RULE-CODES)))
+                         (define next-token (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
+                         ;; here's how we support grammar "cuts" on top rule name
+                         (define parse-tree-stx (rule-grammar next-token))                         
+                         (syntax-case parse-tree-stx ()
+                           [(TOP-RULE-NAME . _)
+                            (if (eq? (syntax-property #'TOP-RULE-NAME 'hide-or-splice?) 'hide)
+                                (remove-rule-name parse-tree-stx) ; use `remove-rule-name` so we get the same housekeeping
+                                parse-tree-stx)]
+                           [_ (error 'malformed-parse-tree)]))
+                       (case-lambda [(tokenizer) (rule-parser tokenizer)]
+                                    [(source tokenizer)
+                                     (parameterize ([current-source source])
+                                       (rule-parser tokenizer))])))]
                 [(_ not-a-rule-id)
                  (raise-syntax-error #f
                                      (format "Rule ~a is not defined in the grammar" (syntax-e #'not-a-rule-id))
-                                     rule-id-stx)]))
+                                     stx)]))
 
             ;; start-id has to be a value, not an expr, because make-rule-parser is a macro
             (define PARSE (procedure-rename (MAKE-RULE-PARSER START-ID) 'PARSE))
