@@ -7,7 +7,7 @@
          brag/private/internal-support)
 
 
-(provide THE-ERROR-HANDLER 
+(provide the-error-handler 
          make-permissive-tokenizer
          atomic-datum->syntax
          positions->srcloc
@@ -19,7 +19,7 @@
 ;; The level of indirection here is necessary since the yacc grammar wants a
 ;; function value for the error handler up front.  We want to delay that decision
 ;; till parse time.
-(define (THE-ERROR-HANDLER tok-ok? tok-name tok-value start-pos end-pos)
+(define (the-error-handler tok-ok? tok-name tok-value start-pos end-pos)
   (match (positions->srcloc start-pos end-pos)
     [(list src line col offset span)
      ((current-parser-error-handler) tok-name 
