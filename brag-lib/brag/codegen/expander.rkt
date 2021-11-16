@@ -78,29 +78,32 @@
                       (member (syntax-e #'start-rule) 'RULE-IDS))
                  ;; The cfg-parser depends on the start-rule provided in (start ...) to have the same
                  ;; context as the rest of this body. Hence RECOLORED-START-RULE
-                 (with-syntax ([RECOLORED-START-RULE (datum->syntax #'RULES-STX (syntax-e #'start-rule))])
-                   #'(let ([THE-GRAMMAR (cfg-parser (tokens enumerated-tokens)
-                                                    (src-pos)
-                                                    (start RECOLORED-START-RULE)
-                                                    (end EOF)
-                                                    (error THE-ERROR-HANDLER)
-                                                    (grammar . GENERATED-RULE-CODES))])
+                 (with-syntax ([RECOLORED-START-RULE (datum->syntax #'RULES-STX (syntax-e #'start-rule))]
+                               [PARSE-NAME (datum->syntax #'RULES-STX (string->symbol (format "~a-rule-parser" 'start-rule)))])
+                   #'(let* ([THE-GRAMMAR (cfg-parser (tokens enumerated-tokens)
+                                                     (src-pos)
+                                                     (start RECOLORED-START-RULE)
+                                                     (end EOF)
+                                                     (error THE-ERROR-HANDLER)
+                                                     (grammar . GENERATED-RULE-CODES))]
+                            [THE-BODY (lambda (tokenizer) 
+                                        (define next-token
+                                          (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
+                                        ;; little post-processor to support cuts on top rule name
+                                        (define parse-tree-stx (THE-GRAMMAR next-token))
+                                        (define top-rule-name-stx (syntax-case parse-tree-stx ()
+                                                                    [(TRN . REST) #'TRN]
+                                                                    [_ (error 'malformed-parse-tree)]))
+                                        (if (eq? (syntax-property top-rule-name-stx 'hide-or-splice?) 'hide)
+                                            ;; use `remove-rule-name` so we get the same housekeeping
+                                            (remove-rule-name parse-tree-stx) 
+                                            parse-tree-stx))])
                        (procedure-rename
                         (case-lambda [(tokenizer)
-                                      (define next-token
-                                        (make-permissive-tokenizer tokenizer all-tokens-hash/mutable))
-                                      ;; little post-processor to support cuts on top rule name
-                                      (define parse-tree-stx (THE-GRAMMAR next-token))
-                                      (define top-rule-name-stx (syntax-case parse-tree-stx ()
-                                                                  [(TRN . REST) #'TRN]
-                                                                  [_ (error 'malformed-parse-tree)]))
-                                      (if (eq? (syntax-property top-rule-name-stx 'hide-or-splice?) 'hide)
-                                          ;; use `remove-rule-name` so we get the same housekeeping
-                                          (remove-rule-name parse-tree-stx) 
-                                          parse-tree-stx)]
+                                      (THE-BODY tokenizer)]
                                      [(source tokenizer)
                                       (parameterize ([current-source source])
-                                        (PARSE tokenizer))])
+                                        (THE-BODY tokenizer))])
                         (string->symbol (format "~a-rule-parser" 'start-rule)))))]
                 [(_ not-a-rule-id)
                  (raise-syntax-error #f
