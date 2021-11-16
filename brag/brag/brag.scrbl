@@ -538,16 +538,24 @@ Here's the definition for
   brag/examples/simple-line-drawing/semantics
   #:read my-read
   #:read-syntax my-read-syntax
+  #:info my-get-info
   #:whole-body-readers? #t
 
   (require brag/examples/simple-line-drawing/lexer
-  brag/examples/simple-line-drawing/grammar)
+           brag/examples/simple-line-drawing/grammar)
 
   (define (my-read in)
-  (syntax->datum (my-read-syntax #f in)))
+    (syntax->datum (my-read-syntax #f in)))
 
   (define (my-read-syntax src ip)
-  (list (parse src (tokenize ip))))
+    (list (parse src (tokenize ip))))
+
+  (define (my-get-info key default default-filter)
+    (case key
+      [(color-lexer)
+       (dynamic-require 'syntax-color/default-lexer 'default-lexer)]
+      [else
+       (default-filter key default)]))
   }|
 }
 
@@ -564,43 +572,43 @@ compilation:
   (require (for-syntax racket/base syntax/parse))
 
   (provide #%module-begin
-  ;; We reuse Racket's treatment of raw datums, specifically
-  ;; for strings and numbers:
-  #%datum
-         
-  ;; And otherwise, we provide definitions of these three forms.
-  ;; During compiliation, Racket uses these definitions to 
-  ;; rewrite into for loops, displays, and newlines.
-  drawing rows chunk)
+           ;; We reuse Racket's treatment of raw datums, specifically
+           ;; for strings and numbers:
+           #%datum
+           
+           ;; And otherwise, we provide definitions of these three forms.
+           ;; During compiliation, Racket uses these definitions to 
+           ;; rewrite into for loops, displays, and newlines.
+           drawing rows chunk)
 
   ;; Define a few compile-time functions to do the syntax rewriting:
   (begin-for-syntax
-  (define (compile-drawing drawing-stx)
-  (syntax-parse drawing-stx
-  [({~literal drawing} rows-stxs ...)
+    (define (compile-drawing drawing-stx)
+      (syntax-parse drawing-stx
+        [({~literal drawing} row-stxs ...)
 
-  (syntax/loc drawing-stx
-  (begin rows-stxs ...))]))
+       (syntax/loc drawing-stx
+         (begin row-stxs ...))]))
 
-  (define (compile-rows rows-stx)
-  (syntax-parse rows-stx
-  [({~literal rows}
-  ({~literal repeat} repeat-number)
-  chunks ... 
-  ";")
+    (define (compile-rows row-stx)
+      (syntax-parse row-stx
+        [({~literal rows}
+          ({~literal repeat} repeat-number)
+          chunks ... 
+          ";")
 
-  (syntax/loc rows-stx
-  (for ([i repeat-number])
-  chunks ...
-  (newline)))]))
+         (syntax/loc row-stx
+           (for ([i repeat-number])
+             chunks ...
+             (newline)))]))
 
-  (define (compile-chunk chunk-stx)
-  (syntax-parse chunk-stx
-  [({~literal chunk} chunk-size chunk-string)
+    (define (compile-chunk chunk-stx)
+      (syntax-parse chunk-stx
+        [({~literal chunk} chunk-size chunk-string)
 
-  (syntax/loc chunk-stx
-  (for ([k chunk-size])
-  (display chunk-string)))])))
+         (syntax/loc chunk-stx
+           (for ([k chunk-size])
+             (display chunk-string)))])))
 
 
   ;; Wire up the use of "drawing", "rows", and "chunk" to these
