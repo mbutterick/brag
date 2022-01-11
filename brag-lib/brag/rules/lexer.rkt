@@ -33,7 +33,14 @@
 (define-lex-abbrev id (:& (complement (:+ digit)) (:+ id-char)))
 (define-lex-abbrev id-separator (:or ":" "::="))
 
-(define-lex-abbrev esc-chars (union "\\a" "\\b" "\\t" "\\n" "\\v" "\\f" "\\r" "\\e"))
+(define-lex-abbrev hexdigit (:or digit (:/ #\a #\f) (:/ #\A #\F)))
+
+(define-lex-abbrev esc-chars (:or
+    (:or "\\a" "\\b" "\\t" "\\n" "\\v" "\\f" "\\r" "\\e")
+    (:seq "\\x" hexdigit hexdigit)
+    (:seq "\\u" hexdigit hexdigit hexdigit hexdigit)
+    (:seq "\\U" hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit)
+  ))
 
 (define (unescape-lexeme lexeme quote-char)
   ;; convert the literal string representation back into an escape char with lookup table
@@ -41,7 +48,7 @@
   (define pat (regexp (format "(?<=^~a\\\\).(?=~a$)" quote-char quote-char)))
   (cond
     [(regexp-match pat lexeme)
-     => (λ (m) (string quote-char (integer->char (hash-ref unescapes (car m))) quote-char))]
+     => (λ (m) (string quote-char (integer->char (hash-ref unescapes (car m))) quote-char))] ;; I have no idea how to change this
     [else lexeme]))
 
 

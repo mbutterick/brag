@@ -1,0 +1,12 @@
+#lang racket/base
+(require brag/examples/unicode
+         brag/support
+         rackunit)
+
+(check-equal?
+ (parse-to-datum "tëst")
+ '(start (graphic "t") (other "ë") (graphic "s") (graphic "t")))
+
+(check-equal?
+ (parse-to-datum "🧑🏻") ;; two codepoints in one character
+ '(start (other "\U0001F9D1") (other "\U0001F3FB")))
