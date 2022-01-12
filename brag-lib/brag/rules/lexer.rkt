@@ -1,4 +1,4 @@
-#lang racket/base
+#lang debug at-exp racket/base
 (require (for-syntax racket/base "parser.rkt"))
 (require br-parser-tools/lex
          (prefix-in : br-parser-tools/lex-sre)
@@ -35,28 +35,28 @@
 
 (define-lex-abbrev esc-chars (union "\\a" "\\b" "\\t" "\\n" "\\v" "\\f" "\\r" "\\e"))
 
-(define (unescape-lexeme lexeme quote-char)
-  ;; convert the literal string representation back into an escape char with lookup table
-  (define unescapes (hash "a" 7 "b" 8 "t" 9 "n" 10 "v" 11 "f" 12 "r" 13 "e" 27 "\"" 34 "'" 39 "\\" 92))
-  (define pat (regexp (format "(?<=^~a\\\\).(?=~a$)" quote-char quote-char)))
-  (cond
-    [(regexp-match pat lexeme)
-     => (λ (m) (string quote-char (integer->char (hash-ref unescapes (car m))) quote-char))]
-    [else lexeme]))
+(require syntax-color/racket-lexer)
 
+(define (unescape-double-quoted-lexeme lexeme)
+  (list->string `(#\" ,@(string->list (read (open-input-string lexeme))) #\")))
+
+(define (convert-to-double-quoted lexeme)
+  (define outside-quotes-removed (string-trim lexeme "'"))
+  (define single-quotes-unescaped (string-replace outside-quotes-removed "\\'" "'"))
+  (define double-quotes-escaped (string-replace single-quotes-unescaped "\"" "\\\""))
+  (define double-quotes-on-ends (string-append "\"" double-quotes-escaped "\""))
+  double-quotes-on-ends)
 
 (define lex/1
   (lexer-src-pos
    ;; handle whitespace & escape chars within quotes as literal tokens: "\n" "\t" '\n' '\t'
    ;; match the escaped version, and then unescape them before they become token-LITs
-   [(:: "'"
-        (:or (:* (:or "\\'" esc-chars (:~ "'" "\\"))) "\\\\")
-        "'")
-    (token-LIT (unescape-lexeme lexeme #\'))]
-   [(:: "\""
-        (:or (:* (:or "\\\"" esc-chars (:~ "\"" "\\"))) "\\\\")
-        "\"")
-    (token-LIT (unescape-lexeme lexeme #\"))]
+   [(:or (:: "'\\\\'") ; aka '\\'
+         (:: "'" (:* (:or "\\'" esc-chars (:~ "'" "\\"))) "'"))
+    (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme)))]
+   [(:or (:: "\"\\\\\"") ; aka "\\"
+         (:: "\"" (:* (:or "\\\"" esc-chars (:~ "\"" "\\"))) "\""))
+    (token-LIT (unescape-double-quoted-lexeme lexeme))]
    [(:or "()" "Ø" "∅") (token-EMPTY lexeme)]
    ["("
     (token-LPAREN lexeme)]
