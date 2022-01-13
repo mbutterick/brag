@@ -47,15 +47,29 @@
   (define double-quotes-on-ends (string-append "\"" double-quotes-escaped "\""))
   double-quotes-on-ends)
 
+(define-lex-abbrev escaped-single-quote "\\'")
+(define-lex-abbrev single-quote "'")
+(define-lex-abbrev escaped-double-quote "\\\"")
+(define-lex-abbrev double-quote "\"")
+(define-lex-abbrev escaped-backslash "\\\\")
+
 (define lex/1
   (lexer-src-pos
    ;; handle whitespace & escape chars within quotes as literal tokens: "\n" "\t" '\n' '\t'
    ;; match the escaped version, and then unescape them before they become token-LITs
-   [(:or (:: "'\\\\'") ; aka '\\'
-         (:: "'" (:* (:or "\\'" esc-chars (:~ "'" "\\"))) "'"))
+   [(:: single-quote
+        (:or
+         (:+ escaped-backslash) ; aka '\\'
+         (intersection (:* (:or escaped-single-quote (:~ single-quote)))
+                       (complement (:: escaped-backslash any-string))))
+        single-quote)
     (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme)))]
-   [(:or (:: "\"\\\\\"") ; aka "\\"
-         (:: "\"" (:* (:or "\\\"" esc-chars (:~ "\"" "\\"))) "\""))
+   [(:: double-quote
+        (:or
+         (:+ escaped-backslash) ; aka "\\"
+         (intersection (:* (:or escaped-double-quote (:~ double-quote)))
+                       (complement (:: escaped-backslash any-string))))
+        double-quote)
     (token-LIT (unescape-double-quoted-lexeme lexeme))]
    [(:or "()" "Ø" "∅") (token-EMPTY lexeme)]
    ["("
