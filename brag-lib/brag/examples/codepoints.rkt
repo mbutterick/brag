@@ -1,5 +1,6 @@
 #lang brag
-start: "\101" ; A
-     | "\U0063" ; c
-     | "\u64" ; d
-     | "\x65" ; e
+start: A c d e
+A : "\101" ; A
+c : "\U0063" ; c
+d : "\u64" ; d
+e : "\x65" ; e
