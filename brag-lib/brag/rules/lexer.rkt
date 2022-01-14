@@ -35,11 +35,16 @@
 
 (define-lex-abbrev esc-chars (union "\\a" "\\b" "\\t" "\\n" "\\v" "\\f" "\\r" "\\e"))
 
-(require syntax-color/racket-lexer)
-
-(define (unescape-double-quoted-lexeme lexeme)
+(define (unescape-double-quoted-lexeme lexeme start-pos end-pos)
   ;; use `read` so brag strings have all the notational semantics of Racket strings
-  (list->string `(#\" ,@(string->list (read (open-input-string lexeme))) #\")))
+  (with-handlers ([exn:fail:read?
+                   (λ (e) ((current-parser-error-handler)
+                           #f
+                           'error
+                           lexeme
+                           (position->pos start-pos)
+                           (position->pos end-pos)))])
+    (list->string `(#\" ,@(string->list (read (open-input-string lexeme))) #\"))))
 
 (define (convert-to-double-quoted lexeme)
   ;; brag supports single-quoted strings, for some reason
@@ -77,7 +82,9 @@
          ;; we forbid the second possibility         
          (complement (:: any-string backslash escaped-double-quote any-string)))
         double-quote) ;; end with double quote
-    (token-LIT (unescape-double-quoted-lexeme lexeme))]
+    (let ()
+      (displayln lexeme)
+      (token-LIT (unescape-double-quoted-lexeme lexeme start-pos end-pos)))]
    ;; single-quoted string follows the same pattern,
    ;; but with escaped-single-quote instead of escaped-double-quote
    [(:: single-quote
@@ -85,7 +92,7 @@
          (:* (:or escaped-single-quote escaped-backslash (:~ single-quote)))
          (complement (:: any-string backslash escaped-single-quote any-string)))
         single-quote)
-    (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme)))]
+    (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme) start-pos end-pos))]
    [(:or "()" "Ø" "∅") (token-EMPTY lexeme)]
    ["("
     (token-LPAREN lexeme)]
