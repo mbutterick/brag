@@ -1,4 +1,4 @@
-#lang debug at-exp racket/base
+#lang at-exp racket/base
 (require (for-syntax racket/base "parser.rkt"))
 (require br-parser-tools/lex
          (prefix-in : br-parser-tools/lex-sre)
@@ -79,12 +79,13 @@
          ;; it can be lexed as (:: escaped-backlash double-quote) = \\ + "
          ;; or  (:: backlash escaped-double-quote) = \ + \"
          ;; because escapes should be "left associative",
-         ;; we forbid the second possibility         
+         ;; we forbid the second possibility
+         ;; There are still some weird corner cases but the current tests work.
+         ;; with single and double quotes in the mix,
+         ;; I'm not sure how much better this can be.
          (complement (:: any-string backslash escaped-double-quote any-string)))
         double-quote) ;; end with double quote
-    (let ()
-      (displayln lexeme)
-      (token-LIT (unescape-double-quoted-lexeme lexeme start-pos end-pos)))]
+    (token-LIT (unescape-double-quoted-lexeme lexeme start-pos end-pos))]
    ;; single-quoted string follows the same pattern,
    ;; but with escaped-single-quote instead of escaped-double-quote
    [(:: single-quote
