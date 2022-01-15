@@ -6,7 +6,8 @@
          "rule-structs.rkt"
          (only-in brag/support from/to)
          racket/string
-         syntax-color/racket-lexer)
+         syntax-color/racket-lexer
+         racket/match)
 
 (provide lex/1 tokenize)
 (module+ lex-abbrevs
@@ -34,19 +35,6 @@
 (define-lex-abbrev id (:& (complement (:+ digit)) (:+ id-char)))
 (define-lex-abbrev id-separator (:or ":" "::="))
 
-(define-lex-abbrev esc-chars (union "\\a" "\\b" "\\t" "\\n" "\\v" "\\f" "\\r" "\\e"))
-
-(define (unescape-double-quoted-lexeme lexeme start-pos end-pos)
-  ;; use `read` so brag strings have all the notational semantics of Racket strings
-  (with-handlers ([exn:fail:read?
-                   (λ (e) ((current-parser-error-handler)
-                           #f
-                           'error
-                           lexeme
-                           (position->pos start-pos)
-                           (position->pos end-pos)))])
-    (list->string `(#\" ,@(string->list (read (open-input-string lexeme))) #\"))))
-
 (define (convert-to-double-quoted lexeme)
   ;; brag supports single-quoted strings, for some reason
   ;; (Racket does not. A single quote denotes a datum)
@@ -60,43 +48,11 @@
   (define double-quotes-on-ends (string-append "\"" double-quotes-escaped "\""))
   double-quotes-on-ends)
 
-(define-lex-abbrev backslash "\\")
-(define-lex-abbrev single-quote "'")
-(define-lex-abbrev escaped-single-quote (:: backslash single-quote))
-(define-lex-abbrev double-quote "\"")
-(define-lex-abbrev escaped-double-quote (:: backslash double-quote))
-(define-lex-abbrev escaped-backslash (:: backslash backslash))
-
 (define brag-lex
   (lexer-src-pos
-   ;; we are delegating lexing of double-quoted strings to the Racket lexer (see below)
-   #;[(:: double-quote ;; start with double quote
-        (intersection ;; two conditions need to be true inside the quotes:
-         ;; we can have anything except
-         ;; a plain double-quote (which would close the quote)
-         ;; plus we specially allow escaped double quotes and backslashes
-         (:* (:or escaped-double-quote escaped-backslash (:~ double-quote)))
-         ;; we must forbid one situation with the string \\"
-         ;; the problem is that it's ambiguous:
-         ;; it can be lexed as (:: escaped-backlash double-quote) = \\ + "
-         ;; or  (:: backlash escaped-double-quote) = \ + \"
-         ;; because escapes should be "left associative",
-         ;; we forbid the second possibility
-         ;; There are still some weird corner cases but the current tests work.
-         ;; with single and double quotes in the mix,
-         ;; I'm not sure how much better this can be.
-         (complement (:: any-string backslash escaped-double-quote any-string)))
-        double-quote) ;; end with double quote
-    (token-LIT (unescape-double-quoted-lexeme lexeme start-pos end-pos))]
-   ;; single-quoted string follows the same pattern,
-   ;; but with escaped-single-quote instead of escaped-double-quote
-   [(:: single-quote
-        (intersection
-         (:* (:or escaped-single-quote escaped-backslash (:~ single-quote)))
-         (complement (:: any-string backslash escaped-single-quote any-string)))
-        single-quote)
-    (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme) start-pos end-pos))]
-   [(:or "()" "Ø" "∅") (token-EMPTY lexeme)]
+   ;; we delegate lexing of strings to the Racket lexer (see below)
+   [(:or "()" "Ø" "∅")
+    (token-EMPTY lexeme)]
    ["("
     (token-LPAREN lexeme)]
    ["["
@@ -148,21 +104,24 @@
        (position->pos start-pos)
        (position->pos end-pos-2)))]))
 
+(define (lex/1-with-racket-lexer ip [conversion-proc values])
+  ;; delegate lexing of strings to the default Racket lexer
+  (define-values (line-start col-start pos-start) (port-next-location ip))
+  (define str (read ip))
+  (define-values (line-end col-end pos-end) (port-next-location ip))
+  #R str
+  (make-position-token (token-LIT (string-append "\"" str "\""))
+                       (make-position pos-start line-start col-start)
+                       (make-position pos-end line-end col-end)))
+
 (define (lex/1 ip)
-  (cond
-    [(equal? (peek-bytes 1 0 ip) #"\"")
-     ;; delegate lexing of strings to the default Racket lexer
-     ;; this doesn't yet work with single-quoted strings
-     ;; but maybe there's a way to do that by messing with the readtable
-     (define-values (line-start col-start pos-start) (port-next-location ip))
-     (define-values (str type paren also-pos-start also-pos-end) (racket-lexer ip))
-     (define-values (line-end col-end pos-end) (port-next-location ip))
-     (make-position-token (token-LIT (string-append "\""
-                                                    (read (open-input-string str))
-                                                    "\""))
-                          (make-position pos-start line-start col-start)
-                          (make-position pos-end line-end col-end))]
-    [else (brag-lex ip)]))
+  (match (peek-bytes 1 0 ip)
+    [#"\"" (lex/1-with-racket-lexer ip)]
+    [#"'" (parameterize ([current-readtable (make-readtable (current-readtable)
+                                                          #\' #\" #f)])
+            #R 'lex-single-quoted-string
+           (lex/1-with-racket-lexer ip convert-to-double-quoted))]
+    [_ (brag-lex ip)]))
 
 ;; This is the helper for the error production.
 (define lex-nonwhitespace
