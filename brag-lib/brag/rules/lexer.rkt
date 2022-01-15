@@ -1,11 +1,12 @@
-#lang at-exp racket/base
+#lang debug racket/base
 (require (for-syntax racket/base "parser.rkt"))
 (require br-parser-tools/lex
          (prefix-in : br-parser-tools/lex-sre)
          "parser.rkt"
          "rule-structs.rkt"
          (only-in brag/support from/to)
-         racket/string)
+         racket/string
+         syntax-color/racket-lexer)
 
 (provide lex/1 tokenize)
 (module+ lex-abbrevs
@@ -66,9 +67,10 @@
 (define-lex-abbrev escaped-double-quote (:: backslash double-quote))
 (define-lex-abbrev escaped-backslash (:: backslash backslash))
 
-(define lex/1
+(define brag-lex
   (lexer-src-pos
-   [(:: double-quote ;; start with double quote
+   ;; we are delegating lexing of double-quoted strings to the Racket lexer (see below)
+   #;[(:: double-quote ;; start with double quote
         (intersection ;; two conditions need to be true inside the quotes:
          ;; we can have anything except
          ;; a plain double-quote (which would close the quote)
@@ -146,6 +148,21 @@
        (position->pos start-pos)
        (position->pos end-pos-2)))]))
 
+(define (lex/1 ip)
+  (cond
+    [(equal? (peek-bytes 1 0 ip) #"\"")
+     ;; delegate lexing of strings to the default Racket lexer
+     ;; this doesn't yet work with single-quoted strings
+     ;; but maybe there's a way to do that by messing with the readtable
+     (define-values (line-start col-start pos-start) (port-next-location ip))
+     (define-values (str type paren also-pos-start also-pos-end) (racket-lexer ip))
+     (define-values (line-end col-end pos-end) (port-next-location ip))
+     (make-position-token (token-LIT (string-append "\""
+                                                    (read (open-input-string str))
+                                                    "\""))
+                          (make-position pos-start line-start col-start)
+                          (make-position pos-end line-end col-end))]
+    [else (brag-lex ip)]))
 
 ;; This is the helper for the error production.
 (define lex-nonwhitespace
@@ -156,8 +173,6 @@
     (values lexeme end-pos)]
    [(eof)
     (values "" end-pos)]))
-
-
 
 ;; position->pos: position -> pos
 ;; Converts position structures from br-parser-tools/lex to our own pos structures.
