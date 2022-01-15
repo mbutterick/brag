@@ -51,11 +51,13 @@
 (check-equal? (l "]")
               '(RBRACKET "]" 1 2))
 
+;; 220111: lexer now converts single-quoted lexemes
+;; to standard Racket-style double-quoted string literal
 (check-equal? (l "'hello'")
-              '(LIT "'hello'" 1 8))
+              '(LIT "\"hello\"" 1 8))
 
 (check-equal? (l "'he\\'llo'")
-              '(LIT "'he\\'llo'" 1 10))
+              '(LIT "\"he'llo\"" 1 10))
 
 (check-equal? (l "/")
               '(HIDE "/" 1 2))

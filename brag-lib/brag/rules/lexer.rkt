@@ -1,4 +1,4 @@
-#lang racket/base
+#lang at-exp racket/base
 (require (for-syntax racket/base "parser.rkt"))
 (require br-parser-tools/lex
          (prefix-in : br-parser-tools/lex-sre)
@@ -35,28 +35,65 @@
 
 (define-lex-abbrev esc-chars (union "\\a" "\\b" "\\t" "\\n" "\\v" "\\f" "\\r" "\\e"))
 
-(define (unescape-lexeme lexeme quote-char)
-  ;; convert the literal string representation back into an escape char with lookup table
-  (define unescapes (hash "a" 7 "b" 8 "t" 9 "n" 10 "v" 11 "f" 12 "r" 13 "e" 27 "\"" 34 "'" 39 "\\" 92))
-  (define pat (regexp (format "(?<=^~a\\\\).(?=~a$)" quote-char quote-char)))
-  (cond
-    [(regexp-match pat lexeme)
-     => (λ (m) (string quote-char (integer->char (hash-ref unescapes (car m))) quote-char))]
-    [else lexeme]))
+(define (unescape-double-quoted-lexeme lexeme start-pos end-pos)
+  ;; use `read` so brag strings have all the notational semantics of Racket strings
+  (with-handlers ([exn:fail:read?
+                   (λ (e) ((current-parser-error-handler)
+                           #f
+                           'error
+                           lexeme
+                           (position->pos start-pos)
+                           (position->pos end-pos)))])
+    (list->string `(#\" ,@(string->list (read (open-input-string lexeme))) #\"))))
 
+(define (convert-to-double-quoted lexeme)
+  ;; brag supports single-quoted strings, for some reason
+  ;; (Racket does not. A single quote denotes a datum)
+  ;; let's convert a single-quoted string into standard double-quoted style
+  ;; so we can use Racket's `read` function on it.
+  ;; and thereby support all the standard Racket string elements:
+  ;; https://docs.racket-lang.org/reference/reader.html#%28part._parse-string%29
+  (define outside-quotes-removed (string-trim lexeme "'"))
+  (define single-quotes-unescaped (string-replace outside-quotes-removed "\\'" "'"))
+  (define double-quotes-escaped (string-replace single-quotes-unescaped "\"" "\\\""))
+  (define double-quotes-on-ends (string-append "\"" double-quotes-escaped "\""))
+  double-quotes-on-ends)
+
+(define-lex-abbrev backslash "\\")
+(define-lex-abbrev single-quote "'")
+(define-lex-abbrev escaped-single-quote (:: backslash single-quote))
+(define-lex-abbrev double-quote "\"")
+(define-lex-abbrev escaped-double-quote (:: backslash double-quote))
+(define-lex-abbrev escaped-backslash (:: backslash backslash))
 
 (define lex/1
   (lexer-src-pos
-   ;; handle whitespace & escape chars within quotes as literal tokens: "\n" "\t" '\n' '\t'
-   ;; match the escaped version, and then unescape them before they become token-LITs
-   [(:: "'"
-        (:or (:* (:or "\\'" esc-chars (:~ "'" "\\"))) "\\\\")
-        "'")
-    (token-LIT (unescape-lexeme lexeme #\'))]
-   [(:: "\""
-        (:or (:* (:or "\\\"" esc-chars (:~ "\"" "\\"))) "\\\\")
-        "\"")
-    (token-LIT (unescape-lexeme lexeme #\"))]
+   [(:: double-quote ;; start with double quote
+        (intersection ;; two conditions need to be true inside the quotes:
+         ;; we can have anything except
+         ;; a plain double-quote (which would close the quote)
+         ;; plus we specially allow escaped double quotes and backslashes
+         (:* (:or escaped-double-quote escaped-backslash (:~ double-quote)))
+         ;; we must forbid one situation with the string \\"
+         ;; the problem is that it's ambiguous:
+         ;; it can be lexed as (:: escaped-backlash double-quote) = \\ + "
+         ;; or  (:: backlash escaped-double-quote) = \ + \"
+         ;; because escapes should be "left associative",
+         ;; we forbid the second possibility
+         ;; There are still some weird corner cases but the current tests work.
+         ;; with single and double quotes in the mix,
+         ;; I'm not sure how much better this can be.
+         (complement (:: any-string backslash escaped-double-quote any-string)))
+        double-quote) ;; end with double quote
+    (token-LIT (unescape-double-quoted-lexeme lexeme start-pos end-pos))]
+   ;; single-quoted string follows the same pattern,
+   ;; but with escaped-single-quote instead of escaped-double-quote
+   [(:: single-quote
+        (intersection
+         (:* (:or escaped-single-quote escaped-backslash (:~ single-quote)))
+         (complement (:: any-string backslash escaped-single-quote any-string)))
+        single-quote)
+    (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme) start-pos end-pos))]
    [(:or "()" "Ø" "∅") (token-EMPTY lexeme)]
    ["("
     (token-LPAREN lexeme)]
