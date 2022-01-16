@@ -1,4 +1,4 @@
-#lang debug racket/base
+#lang racket/base
 (require (for-syntax racket/base "parser.rkt"))
 (require br-parser-tools/lex
          (prefix-in : br-parser-tools/lex-sre)
@@ -35,6 +35,17 @@
 (define-lex-abbrev id (:& (complement (:+ digit)) (:+ id-char)))
 (define-lex-abbrev id-separator (:or ":" "::="))
 
+(define (unescape-double-quoted-lexeme lexeme start-pos end-pos)
+  ;; use `read` so brag strings have all the notational semantics of Racket strings
+  (with-handlers ([exn:fail:read?
+                   (λ (e) ((current-parser-error-handler)
+                           #f
+                           'error
+                           lexeme
+                           (position->pos start-pos)
+                           (position->pos end-pos)))])
+    (list->string `(#\" ,@(string->list (read (open-input-string lexeme))) #\"))))
+
 (define (convert-to-double-quoted lexeme)
   ;; brag supports single-quoted strings, for some reason
   ;; (Racket does not. A single quote denotes a datum)
@@ -48,9 +59,23 @@
   (define double-quotes-on-ends (string-append "\"" double-quotes-escaped "\""))
   double-quotes-on-ends)
 
+(define-lex-abbrev backslash "\\")
+(define-lex-abbrev single-quote "'")
+(define-lex-abbrev escaped-single-quote (:: backslash single-quote))
+(define-lex-abbrev double-quote "\"")
+(define-lex-abbrev escaped-double-quote (:: backslash double-quote))
+(define-lex-abbrev escaped-backslash (:: backslash backslash))
+
 (define brag-lex
   (lexer-src-pos
-   ;; we delegate lexing of strings to the Racket lexer (see below)
+   ;; we delegate lexing of double-quoted strings to the Racket lexer (see below)
+   ;; single-quoted string has to be handled manually (see lex/1 for details)
+   [(:: single-quote
+        (intersection
+         (:* (:or escaped-single-quote escaped-backslash (:~ single-quote)))
+         (complement (:: any-string backslash escaped-single-quote any-string)))
+        single-quote)
+    (token-LIT (unescape-double-quoted-lexeme (convert-to-double-quoted lexeme) start-pos end-pos))]
    [(:or "()" "Ø" "∅")
     (token-EMPTY lexeme)]
    ["("
@@ -109,7 +134,6 @@
   (define-values (line-start col-start pos-start) (port-next-location ip))
   (define str (read ip))
   (define-values (line-end col-end pos-end) (port-next-location ip))
-  #R str
   (make-position-token (token-LIT (string-append "\"" str "\""))
                        (make-position pos-start line-start col-start)
                        (make-position pos-end line-end col-end)))
@@ -117,10 +141,15 @@
 (define (lex/1 ip)
   (match (peek-bytes 1 0 ip)
     [#"\"" (lex/1-with-racket-lexer ip)]
-    [#"'" (parameterize ([current-readtable (make-readtable (current-readtable)
-                                                          #\' #\" #f)])
-            #R 'lex-single-quoted-string
-           (lex/1-with-racket-lexer ip convert-to-double-quoted))]
+    ;; it would be nice to also handle single-quoted strings with the Racket lexer
+    ;; but we can only change the opening delimiter with the readtable.
+    ;; for whatever reason, the closing delimiter still has to be a double quote.
+    ;; "mapping a character to the same action as a " means that the character starts a string, but the string is still terminated with a closing ". "
+    ;; https://docs.racket-lang.org/reference/readtables.html#%28def._%28%28quote._~23~25kernel%29._make-readtable%29%29
+    #;[#"'" (parameterize ([current-readtable (make-readtable (current-readtable)
+                                                              #\' #\" #f)])
+              'lex-single-quoted-string
+              (lex/1-with-racket-lexer ip convert-to-double-quoted))]
     [_ (brag-lex ip)]))
 
 ;; This is the helper for the error production.
