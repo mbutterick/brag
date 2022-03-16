@@ -117,7 +117,7 @@ That's @racket[(some [pig])], essentially.
 What happens if we pass our @racket[parse] function a bigger source of tokens?
 
 @interaction[#:eval my-eval
-             @code:comment{tokenize: string -> (sequenceof token-struct?)}
+             @code:comment{tokenize: string -> (sequence/c token-struct?)}
              @code:comment{Generate tokens from a string:}
              (define (tokenize s)
                (for/list ([str (regexp-match* #px"\\(|\\)|\\w+" s)])
@@ -922,7 +922,7 @@ A program written in @litchar{#lang brag} produces a module that provides a few
 bindings. The most important of these is @racket[parse]:
 
 @defproc[(parse [source-path any/c #f] 
-                [token-source (or/c (sequenceof token)
+                [token-source (or/c (sequence/c token)
                                     (-> token))])
          syntax?]{
 
